@@ -1,0 +1,188 @@
+<template>
+    <v-app>
+        <v-app-bar color="#777E8B" fixed dense>
+            <!-- <div v-if="this.$route.path != '/'">
+                <v-btn link to="/" color="white" class="white--text" icon>
+                    <v-icon>mdi-home</v-icon>
+                </v-btn>
+            </div> -->
+            <v-app-bar-nav-icon
+                color="white"
+                @click="drawer = true"
+            ></v-app-bar-nav-icon>
+            <v-spacer></v-spacer>
+
+            <!-- user Part -->
+
+            <template v-if="$vuetify.breakpoint">
+                <v-menu transition="scroll-y-transition">
+                    <template v-slot:activator="{ on }">
+                        <v-btn class="white--text" fab icon v-on="on">
+                            <v-avatar color="transparent" small>
+                                <v-icon>
+                                    mdi-account
+                                </v-icon>
+                            </v-avatar>
+                        </v-btn>
+                    </template>
+                    <v-list width="250px" class="text-center subtitle-2">
+                        <v-list-item link to="/user/prehled">
+                            Editace <v-spacer></v-spacer
+                            ><v-icon color="grey" right small
+                                >mdi-account-cog-outline</v-icon
+                            >
+                        </v-list-item>
+                        <v-list-item
+                            v-show="userRole != '4'"
+                            link
+                            to="/settings/prehled"
+                        >
+                            Nastavení App<v-spacer></v-spacer
+                            ><v-icon color="grey" right small
+                                >mdi-settings</v-icon
+                            >
+                        </v-list-item>
+                        <v-divider></v-divider>
+                        <v-list-item @click="logOut()">
+                            Odhlásit se <v-spacer></v-spacer
+                            ><v-icon color="grey" right small>mdi-lock</v-icon>
+                        </v-list-item>
+
+                        <v-divider></v-divider>
+                        <v-list-item
+                            href="http://iptvdoku.grapesc.cz/#/"
+                            target="_blink"
+                        >
+                            IPTV Dokumentace<v-spacer></v-spacer
+                            ><v-icon color="grey" right small
+                                >mdi-television</v-icon
+                            >
+                        </v-list-item>
+                        <v-list-item
+                            href="http://iptvdohled.grapesc.cz/#/"
+                            target="_blink"
+                        >
+                            IPTV Dohled<v-spacer></v-spacer
+                            ><v-icon color="grey" right small
+                                >mdi-television</v-icon
+                            >
+                        </v-list-item>
+                    </v-list>
+                </v-menu>
+            </template>
+            <!-- end User Part -->
+            <v-icon color="white">mdi-bell-outline</v-icon>
+        </v-app-bar>
+
+        <!-- bocní navigace -->
+
+        <v-navigation-drawer v-model="drawer" left fixed temporary>
+            <v-list nav dense>
+                <v-list-item-group v-model="group">
+                    <v-list-item link to="/">
+                        <v-list-item-icon>
+                            <v-icon>mdi-home</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Přehled</v-list-item-title>
+                    </v-list-item>
+
+                    <v-list-item link to="/streams">
+                        <v-list-item-icon>
+                            <v-icon>mdi-view-stream</v-icon>
+                        </v-list-item-icon>
+                        <v-list-item-title>Streamy</v-list-item-title>
+                    </v-list-item>
+
+                    <v-list-group :value="true" no-action sub-group>
+                        <template v-slot:activator>
+                            <v-list-item-icon>
+                                <v-icon>mdi-television</v-icon>
+                            </v-list-item-icon>
+                            <v-list-item-content class="ml-3">
+                                <v-list-item-title
+                                    >Transcodéry</v-list-item-title
+                                >
+                            </v-list-item-content>
+                        </template>
+
+                        <v-list-item
+                            v-for="transcoder in transcoders"
+                            :key="transcoder.id"
+                            link :to="'/transcoder/'+transcoder.ip"
+                        >
+                            <v-list-item-title
+                                v-text="transcoder.name"
+                            ></v-list-item-title>
+                        </v-list-item>
+                    </v-list-group>
+                </v-list-item-group>
+            </v-list>
+        </v-navigation-drawer>
+
+        <!-- konec bocni navigace -->
+
+        <transition name="fade" mode="out-in">
+            <router-view class="mt-1"> </router-view>
+        </transition>
+    </v-app>
+</template>
+
+<script>
+export default {
+    data: () => ({
+        group: null,
+        drawer: null,
+        userMenu: null,
+        userRole: null,
+        loggedUser: null,
+        transcoders: []
+    }),
+
+    computed: {},
+
+    created() {
+        this.loadUser();
+        this.loadTranscoders();
+    },
+    methods: {
+        loadTranscoders() {
+            window.axios.get("transcoders").then(response => {
+                this.transcoders = response.data.data;
+            });
+        },
+
+        logOut() {
+            let currentObj = this;
+            axios.get("logout").then(response => {
+                if (response.data.status === "success") {
+                    currentObj.$router.push("/login");
+                }
+            });
+        },
+
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                if (response.data.status == "error") {
+                    currentObj.$router.push("/login");
+                } else {
+                    currentObj.loggedUser = response.data;
+                    currentObj.userRole = response.data.user_role;
+                }
+            });
+        }
+    },
+
+    mounted() {
+        setInterval(
+            function() {
+                try {
+                    this.loadUser();
+                } catch (error) {}
+            }.bind(this),
+            2000
+        );
+    },
+    watch: {}
+};
+</script>
