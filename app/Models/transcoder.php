@@ -8,4 +8,9 @@ use Illuminate\Database\Eloquent\Model;
 class transcoder extends Model
 {
     use HasFactory;
+    protected $fillable = [
+        'name',
+        'ip',
+        'status'
+    ];
 }

@@ -19,6 +19,7 @@ import TranscoderComponent from "./components/TranscoderComponent";
 import SettingsComponent from "./components/Settings/SettingsComponent";
 import MainTamplateComponent from "./components/Settings/Template/MainTamplateComponent"
 import StreamsSettingsComponent from "./components/Settings/Streams/StreamsSettingsComponent"
+import TranscoderSettingsComponent from "./components/Settings/TranscoderSettingsComponent"
 
 
 import PageNotFoundComponent from "./components/PageNotFoundComponent";
@@ -54,6 +55,10 @@ let routes = [
                     {
                         path: "/settings/streams",
                         component: StreamsSettingsComponent
+                    },
+                    {
+                        path: "/settings/transcoders",
+                        component: TranscoderSettingsComponent
                     },
                     {
                         path: "/settings/users"

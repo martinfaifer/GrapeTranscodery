@@ -6,6 +6,7 @@ use App\Models\Stream;
 use App\Models\transcoder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 
 class TranscoderController extends Controller
 {
@@ -63,13 +64,8 @@ class TranscoderController extends Controller
      */
     public static function stop_running_stream(Request $request)
     {
-
-        return [
-            'status' => "error",
-            'msg' => "Nepodařilo se zastavit stream"
-        ];
         try {
-            $response = Http::post('http://' . $request->transcoderIp . '/tcontrol.php', [
+            $response = Http::get('http://' . $request->transcoderIp . '/tcontrol.php', [
                 'PID' => $request->streamPid,
                 'CMD' => $request->cmd
             ]);
@@ -77,7 +73,22 @@ class TranscoderController extends Controller
             //
             //
             //
-            dd($response);
+            $response = json_decode($response, true);
+            if ($response["STATUS"] === "TRUE") {
+                // zmena pidu na null a statusu na STOP
+                Stream::where('id', $request->streamId)->update(['pid' => null, 'status' => "STOP"]);
+
+                return [
+                    'status' => "success",
+                    'msg' => "Stream zastaven"
+                ];
+            } else {
+                // nepodarilo se zastavit ffmpeg
+                return [
+                    'status' => "error",
+                    'msg' => "Stream se nepodařilo zastavit"
+                ];
+            }
             //
             //
             //
@@ -126,7 +137,22 @@ class TranscoderController extends Controller
             //
             //
             //
-            return $response;
+            $response = json_decode($response, true);
+            if ($response["STATUS"] === "TRUE") {
+                // vyhledání pidu a aktualizace záznamu
+                Stream::where('id', $request->streamId)->update(['pid' => $response["PID"], 'status' => "active"]);
+
+                return [
+                    'status' => "success",
+                    'msg' => "Stream spuštěn"
+                ];
+            } else {
+                // nepodarilo se spustit ffmpeg
+                return [
+                    'status' => "error",
+                    'msg' => "Stream se nepodařilo spustit"
+                ];
+            }
             //
             //
             //
@@ -185,32 +211,43 @@ class TranscoderController extends Controller
     public static function stream_analyse(Request $request)
     {
 
+        if (
+            empty($request->transcoderId) || is_null($request->transcoderId) ||
+            empty($request->stream_src) || is_null($request->stream_src)
+        ) {
+
+            return [
+                'status' => "error",
+                'msg' => "Neočekávaná chyba"
+            ];
+        }
+
         if ($transcoder = transcoder::where('id', $request->transcoderId)->first()) {
 
 
-            // try {
-            $response = Http::get('http://' . $transcoder->ip . '/tcontrol.php', [
-                'CMD' => $request->cmd,
-                'LOCK' => "FALSE",
-                'SRC' => $request->stream_src
-            ]);
+            try {
+                $response = Http::get('http://' . $transcoder->ip . '/tcontrol.php', [
+                    'CMD' => $request->cmd,
+                    'LOCK' => "FALSE",
+                    'SRC' => $request->stream_src
+                ]);
 
-            $response = json_decode($response, true);
-            // return $response;
-            if ($response["STATUS"] === "TRUE") {
+                $response = json_decode($response, true);
+                // return $response;
+                if ($response["STATUS"] === "TRUE") {
 
 
-                // status success => vyhledání streamů
+                    // status success => vyhledání streamů
 
-                return self::create_ffprobe_output_for_frontend($response);
-            } else {
+                    return self::create_ffprobe_output_for_frontend($response);
+                } else {
+                }
+            } catch (\Throwable $th) {
+                return [
+                    'status' => "error",
+                    'msg' => "Nepodařilo se provést analýzu"
+                ];
             }
-            // } catch (\Throwable $th) {
-            //     return [
-            //         'status' => "error",
-            //         'msg' => "Nepodařilo se provést analýzu"
-            //     ];
-            // }
         } else {
             return [
                 'status' => "error",
@@ -238,6 +275,7 @@ class TranscoderController extends Controller
                     // return $streamData["index"];
                     $outputVideo[] = array(
                         'index' =>  $streamData["index"] ?? null,
+                        'input_codec' => self::find_input_codec_for_video($streamData["codec_name"]),
                         'codec_name' => $streamData["codec_name"] ?? null,
                         'codec_type' => $streamData["codec_type"] ?? null
                     );
@@ -261,5 +299,190 @@ class TranscoderController extends Controller
             'video' => $outputVideo,
             'audio' => $outputAudio
         ];
+    }
+
+
+    /**
+     * fn pro vyhledání codecu pro odeslání do frontendu a následně do backendu pro vytvoreni scriptu
+     *
+     * @param string $codec_name
+     * @return string  mpeg2_cuvid , h264_cuvid , hevc_cuvid
+     */
+    public static function find_input_codec_for_video(string $codec_name): string
+    {
+        switch ($codec_name) {
+            case 'mpeg2video':
+                return "mpeg2_cuvid";
+                break;
+            case 'h264':
+                return "h264_cuvid";
+                break;
+            case 'hevc':
+                return "hevc_cuvid";
+                break;
+        }
+    }
+
+
+    /**
+     * fn pro založení nového transcoderu
+     *
+     * @param Request $request -> name , ip
+     * @return array
+     */
+    public function create_transcoder(Request $request): array
+    {
+        // validace inputu
+        if (
+            is_null($request->name) || empty($request->name) ||
+            is_null($request->ip) || empty($request->ip)
+        ) {
+            return [
+                'status' => "warning",
+                'msg' => "Není vše řádně vyplněno"
+            ];
+        }
+
+        // validace formátu ipv4
+        if (!filter_var($request->ip, FILTER_VALIDATE_IP)) {
+            return [
+                'status' => "warning",
+                'msg' => "Neplatný formát IPv4"
+            ];
+        }
+
+        if (transcoder::where('ip', $request->ip)->first()) {
+            return [
+                'status' => "warning",
+                'msg' => "Tato IPv4 je již registrována"
+            ];
+        }
+
+        try {
+            transcoder::create([
+                'name' => $request->name,
+                'ip' => $request->ip,
+                'status' => "waiting"
+            ]);
+            return [
+                'status' => "success",
+                'msg' => "Založeno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "Nepodařilo se založit"
+            ];
+        }
+    }
+
+    /**
+     * fn pro vyhledání a vypsání informací o transcoderu
+     *
+     * @param Request $request -> trasncoderId
+     * @return array
+     */
+    public function search_transcoder(Request $request): array
+    {
+
+        if (!transcoder::where('id', $request->trasncoderId)->first()) {
+            return [];
+        }
+
+        $transcoder = transcoder::where('id', $request->trasncoderId)->first();
+        return [
+            'name' => $transcoder->name,
+            'ip' => $transcoder->ip
+        ];
+    }
+
+    /**
+     * fn pro editaci transcoderu
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function edit_transcoder(Request $request): array
+    {
+        // validace
+        if (
+            is_null($request->transcoderId) || empty($request->transcoderId) ||
+            is_null($request->name) || empty($request->name) ||
+            is_null($request->ip) || empty($request->ip)
+        ) {
+            return [
+                'status' => "warning",
+                'msg' => "Není vše řádně vyplněno!"
+            ];
+        }
+
+        try {
+            transcoder::where('id', $request->transcoderId)->update([
+                'name' => $request->name,
+                'ip' => $request->ip
+            ]);
+
+            return [
+                'status' => "success",
+                'msg' => "Upraveno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "nepodařilo se upravit"
+            ];
+        }
+    }
+
+    /**
+     * fn pro odebrání transcoderu dle transcoderId
+     *
+     * @param Request $request
+     * @return array
+     */
+    public function delete_transcoder(Request $request): array
+    {
+        try {
+            transcoder::where('id', $request->transcoderId)->delete();
+            return [
+                'status' => "success",
+                'msg' => "Odebráno"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "Nepodařilo se odebrat!"
+            ];
+        }
+    }
+
+
+    public static function check_if_streams_running(): void
+    {
+        // kontrola probíhá na všech transcoderech, které mají status active
+        if (transcoder::where('status', "success")->first()) {
+
+            foreach (transcoder::where('status', "success")->get() as $transcoder) {
+                echo $transcoder->ip . "\n";
+                // připojení do transcoderu a získání statusu a pidu
+                $response = Http::get('http://' . $transcoder->ip . '/tcontrol.php?CMD=GETPIDS&LOCK=FALSE');
+                $response = json_decode($response, true);
+
+                if ($response["STATUS"] == "TRUE") {
+                    // pole $response["PIDS"]
+                    if (!is_null($response["PIDS"])) {
+
+                        $pidsFromTranscodersString = implode(" ", $response["PIDS"]);
+                        // dd($pidsFromTranscodersString);
+                        foreach (Stream::where('status', "active")->where('transcoder', $transcoder->id)->get() as $stream) {
+                            // dd($stream->pid);
+                            if (!Str::contains($pidsFromTranscodersString, $stream->pid)) {
+                                Stream::where('id', $stream->id)->update(['status' => "issue"]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -78,5 +78,9 @@ class StreamValidationController extends Controller
                 ];
             }
         }
+
+        return [
+            'status' => "success"
+        ];
     }
 }

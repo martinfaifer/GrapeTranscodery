@@ -107,7 +107,7 @@ class StreamController extends Controller
     /**
      * fn pro zalození nového streamu do systému pro následné spustené
      *
-     * @param Request $request transcoderId, stream_src, videoIndex , dst3 , dst3_kvality , dst2 , dst2_kvality , dst1_kvality , dst1, formatCode, audioIndex , stream_name
+     * @param Request $request inputCodec, transcoderId, stream_src, videoIndex , dst3 , dst3_kvality , dst2 , dst2_kvality , dst1_kvality , dst1, formatCode, audioIndex , stream_name
      * @return array
      */
     public function stream_create(Request $request): array
@@ -169,7 +169,7 @@ class StreamController extends Controller
 
         // finální podoba scriptu
         $script = FFmpegScriptController::ffmpeg_create_script(
-            $request->formatCode,
+            $request->inputCodec,
             trim($request->stream_src),
             $videoPids,
             $audioPids,
@@ -196,6 +196,200 @@ class StreamController extends Controller
         return [
             'status' => "success",
             'msg' => "Založen nový stream"
+        ];
+    }
+
+
+    /**
+     * fn pro vyhledání streamu dle streamId
+     *
+     * @param Request $request-> streamId
+     * @return array
+     */
+    public static function stream_search(Request $request): array
+    {
+        if ($stream = Stream::where('id', $request->streamId)->first()) {
+
+            return [
+                'id' => $stream->id,
+                'nazev' => $stream->nazev,
+                'src' => $stream->src,
+                'dst' => $stream->dst,
+                'dst1_resolution' => $stream->dst1_resolution,
+                'dst2' => $stream->dst2,
+                'dst2_resolution' => $stream->dst2_resolution,
+                'dst3' => $stream->dst3,
+                'dst3_resolution' => $stream->dst3_resolution,
+                'transcoder' => $stream->transcoder
+            ];
+        }
+        return [];
+    }
+
+
+    /**
+     * fn pro editaci zastaveného streamu
+     *
+     * @param Request $request
+     * @return array
+     */
+    public static function stream_edit(Request $request): array
+    {
+
+        $dst1 = "";
+        $dst2 = "";
+        $dst3 = "";
+        // validace vstupů
+
+        StreamValidationController::validate_stream_inputs($request);
+
+        // vsechny inputy jsou v pořádku, začíná se vytvářet script pro spustení kanálu pro ffmpeg, který se následně zašle do transcoderu
+
+        if ($request->dst1) {
+            $kvalitaForBitrateDst1 = StreamKvality::where('id', $request->dst1_kvality)->first();
+            $dst1 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                $request->formatCode,
+                $kvalitaForBitrateDst1->bitrate,
+                $kvalitaForBitrateDst1->minrate,
+                $kvalitaForBitrateDst1->maxrate,
+                "fast",
+                trim($request->dst1),
+                $kvalitaForBitrateDst1->scale,
+                false
+            );
+        }
+
+        if ($request->dst2) {
+            $kvalitaForBitrateDst2 = StreamKvality::where('id', $request->dst2_kvality)->first();
+            $dst2 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                $request->formatCode,
+                $kvalitaForBitrateDst2->bitrate,
+                $kvalitaForBitrateDst2->minrate,
+                $kvalitaForBitrateDst2->maxrate,
+                "fast",
+                trim($request->dst2),
+                $kvalitaForBitrateDst2->scale,
+                false
+            );
+        }
+
+        if ($request->dst3) {
+            $kvalitaForBitrateDst3 = StreamKvality::where('id', $request->dst3_kvality)->first();
+            $dst3 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                $request->formatCode,
+                $kvalitaForBitrateDst3->bitrate,
+                $kvalitaForBitrateDst3->minrate,
+                $kvalitaForBitrateDst3->maxrate,
+                "fast",
+                trim($request->dst3),
+                $kvalitaForBitrateDst3->scale,
+                false
+            );
+        }
+
+        // mapování pidů
+        $videoPids = " -map 0:" . $request->videoIndex;
+        $audioPids =  " -map 0:" . $request->audioIndex;
+
+        // finální podoba scriptu
+        $script = FFmpegScriptController::ffmpeg_create_script(
+            $request->inputCodec,
+            trim($request->stream_src),
+            $videoPids,
+            $audioPids,
+            $dst1,
+            $dst2,
+            $dst3
+        );
+        // Založení streamu
+        Stream::where('id', $request->streamId)->update([
+            'nazev' => $request->stream_name,
+            'src' => trim($request->stream_src),
+            'dst' => trim($request->dst1),
+            'dst1_resolution' => $kvalitaForBitrateDst1->kvalita,
+            'dst2' => trim($request->dst2) ?? null,
+            'dst2_resolution' => $kvalitaForBitrateDst2->kvalita ?? null,
+            'dst3' => trim($request->dst3) ?? null,
+            'dst3_resolution' => $kvalitaForBitrateDst3->kvalita ?? null,
+            'format' => StreamFormat::where('code', $request->formatCode)->first()->video,
+            'script' => $script,
+            'transcoder' => $request->transcoderId,
+            'status' => "STOP"
+        ]);
+
+        return [
+            'status' => "success",
+            'msg' => "Stream byl upraven"
+        ];
+    }
+
+    /**
+     * fn pro výpis scriptu pro ffmepg
+     *
+     * @param Request $request->streamId
+     * @return string
+     */
+    public function stream_script(Request $request): string
+    {
+        return Stream::where('id', $request->streamId)->first()->script;
+    }
+
+
+    /**
+     * fn pro editaci scriptu , kdy se zasila req s parametry streamId a script
+     *
+     * @param Request $request streamId, script
+     * @return array
+     */
+    public function stream_script_edit(Request $request): array
+    {
+        try {
+            Stream::where('id', $request->streamId)->update([
+                'script' => $request->script
+            ]);
+
+            return [
+                'status' => "success",
+                'msg' => "Script byl upraven"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "Script se nepodařilo upravit"
+            ];
+        }
+        return [];
+    }
+
+
+    /**
+     * fn pro odebrání streamu, který má status jiny nez active (neprobíhá transcoding)
+     *
+     * @param Request $request->streamId
+     * @return array
+     */
+    public function stream_delete(Request $request): array
+    {
+        if (!Stream::where('id', $request->streamId)->first()) {
+            return [
+                'status' => "error",
+                'msg' => "Stream se nepodařilo vyhledat"
+            ];
+        }
+
+        $stream =  Stream::where('id', $request->streamId)->first();
+
+        if ($stream->status == "active") {
+            return [
+                'status' => "error",
+                'msg' => "Stream se transcoduje"
+            ];
+        }
+
+        $stream->delete();
+        return [
+            'status' => "success",
+            'msg' => "Stream byl úspěšně odebrán"
         ];
     }
 }

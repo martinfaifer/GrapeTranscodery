@@ -1,6 +1,9 @@
 <template>
     <div>
-        <notification-component v-if="status != null" :status="status"></notification-component>
+        <notification-component
+            v-if="status != null"
+            :status="status"
+        ></notification-component>
         <v-card class="elevation-0">
             <v-card-title>
                 <v-text-field
@@ -17,16 +20,55 @@
                     :items="streams"
                     :search="search"
                 >
+
+                     <template v-slot:item.status="{ item }">
+                        <span v-if="item.status == 'active'">
+                            <span class="green--text">
+                                <strong>
+                                    funguje
+                                </strong>
+                            </span>
+                        </span>
+                        <span v-else-if="item.status == 'issue'">
+                            <span class="red--text">
+                                <strong>
+                                    problém
+                                </strong>
+                            </span>
+                        </span>
+                        <span v-else>
+                            <span class="blue--text">
+                                <strong>
+                                    zastaven
+                                </strong>
+                            </span>
+                        </span>
+                    </template>
+
                     <template v-slot:item.akce="{ item }">
                         <!-- mdi-play -->
-                        <v-icon v-show="item.status == 'STOP' || item.status == 'issue'" @click="sendPlay(item.id)" small color="green"
-                            >mdi-play</v-icon
+                        <v-btn
+                            icon
+                            :loading="loading"
+                            small
+                            v-show="
+                                item.status == 'STOP' || item.status == 'issue'
+                            "
+                            @click="sendPlay(item.id)"
                         >
+                            <v-icon small color="green">mdi-play</v-icon>
+                        </v-btn>
 
                         <!-- mdi-stop -->
-                        <v-icon v-show="item.status == 'active'" @click="sendStop(item.id, item.pid)" small color="red"
-                            >mdi-stop</v-icon
+                        <v-btn
+                            icon
+                            small
+                            :loading="loading"
+                            v-show="item.status == 'active'"
+                            @click="sendStop(item.id, item.pid)"
                         >
+                            <v-icon small color="red">mdi-stop</v-icon>
+                        </v-btn>
                     </template>
                 </v-data-table>
             </div>
@@ -39,10 +81,12 @@
     </div>
 </template>
 <script>
-import NotificationComponent from "../Notifications/NotificationComponent"
+import NotificationComponent from "../Notifications/NotificationComponent";
 export default {
     data() {
         return {
+            loadingInterval: null,
+            loading: false,
             status: null,
             search: "",
             streams: [],
@@ -103,8 +147,8 @@ export default {
         this.loadStreams();
     },
 
-     components: {
-        "notification-component": NotificationComponent,
+    components: {
+        "notification-component": NotificationComponent
     },
 
     methods: {
@@ -123,7 +167,8 @@ export default {
                 });
         },
         sendPlay(id) {
-             let currentObj = this;
+            this.loading = true;
+            let currentObj = this;
             axios
                 .post("transcoder/stream/start", {
                     streamId: id,
@@ -131,16 +176,17 @@ export default {
                     cmd: "START"
                 })
                 .then(function(response) {
-                    console.log(response.data);
                     currentObj.status = response.data;
+                    currentObj.loading = false;
+                    currentObj.loadStreams();
                     setTimeout(function() {
-                        currentObj.status = null
-                    }, 5000)
-
-                })
+                        currentObj.status = null;
+                    }, 5000);
+                });
         },
 
         sendStop(id, pid) {
+            this.loading = true;
             let currentObj = this;
             axios
                 .post("transcoder/stream/stop", {
@@ -150,18 +196,33 @@ export default {
                     cmd: "KILL"
                 })
                 .then(function(response) {
+                    console.log(response.data);
                     currentObj.status = response.data;
+                    currentObj.loading = false;
+                    currentObj.loadStreams();
                     setTimeout(function() {
-                        currentObj.status = null
-                    }, 5000)
-                })
+                        currentObj.status = null;
+                    }, 5000);
+                });
         }
     },
-
+     mounted() {
+        this.loadingInterval = setInterval(
+            function() {
+                this.loadStreams();
+            }.bind(this),
+            2000
+        );
+    },
     watch: {
         $route(to, from) {
             this.loadStreams();
+            this.loadingInterval = null;
         }
+    },
+
+    beforeDestroy: function() {
+        clearInterval(this.loadingInterval);
     }
 };
 </script>

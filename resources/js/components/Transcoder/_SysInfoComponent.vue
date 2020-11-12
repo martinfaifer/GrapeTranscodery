@@ -316,27 +316,30 @@ export default {
                     transcoderIp: this.$route.params.ip
                 })
                 .then(function(response) {
-                    if (
-                        typeof response.data.gpu.fb_memory_usage !== "undefined"
-                    ) {
-                        currentObj.gpuStat = response.data;
+                    if (response.data.gpu) {
                         if (
                             typeof response.data.gpu.fb_memory_usage !==
                             "undefined"
                         ) {
-                            currentObj.ramUsage =
-                                response.data.gpu.fb_memory_usage;
-                            currentObj.ramTotal = currentObj.ramUsage.total.replace(
-                                " MiB",
-                                ""
-                            );
-                            currentObj.ramUsed = currentObj.ramUsage.used.replace(
-                                " MiB",
-                                ""
-                            );
-                            currentObj.ramPercent =
-                                (currentObj.ramUsed * 100) /
-                                currentObj.ramTotal;
+                            currentObj.gpuStat = response.data;
+                            if (
+                                typeof response.data.gpu.fb_memory_usage !==
+                                "undefined"
+                            ) {
+                                currentObj.ramUsage =
+                                    response.data.gpu.fb_memory_usage;
+                                currentObj.ramTotal = currentObj.ramUsage.total.replace(
+                                    " MiB",
+                                    ""
+                                );
+                                currentObj.ramUsed = currentObj.ramUsage.used.replace(
+                                    " MiB",
+                                    ""
+                                );
+                                currentObj.ramPercent =
+                                    (currentObj.ramUsed * 100) /
+                                    currentObj.ramTotal;
+                            }
                         }
                     }
                 });

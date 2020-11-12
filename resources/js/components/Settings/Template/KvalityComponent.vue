@@ -140,6 +140,98 @@
                 </v-card>
             </v-dialog>
         </v-row>
+
+        <!-- EDIT DIALOG -->
+
+        <v-row justify="center">
+            <v-dialog v-model="editKvalityDialog" persistent max-width="800px">
+                <v-card>
+                    <v-card-title class="headline text-center">
+                        Úprava kvality
+                    </v-card-title>
+                    <v-card-text>
+                        <v-container>
+                            <v-row cols="12" sm="12" md="12" class="mt-2">
+                                <v-col>
+                                    <v-autocomplete
+                                        v-model="videoFormat"
+                                        :items="streamFormats"
+                                        item-value="id"
+                                        item-text="video"
+                                        dense
+                                        label="Video formát"
+                                    ></v-autocomplete>
+                                </v-col>
+                            </v-row>
+                            <v-row
+                                v-show="videoFormat != null"
+                                cols="12"
+                                sm="6"
+                                md="6"
+                                class="mt-2"
+                            >
+                                <v-col>
+                                    <v-text-field
+                                        v-model="editedKvality.sirka"
+                                        label="Šířka"
+                                        type="number"
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col>
+                                    <v-text-field
+                                        v-model="editedKvality.vyska"
+                                        label="Výška"
+                                        type="number"
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                            <v-row
+                                v-show="videoFormat != null"
+                                cols="12"
+                                sm="6"
+                                md="6"
+                                class="mt-2"
+                            >
+                                <v-col>
+                                    <v-text-field
+                                        v-model="editedKvality.minrate"
+                                        label="Minimální bitrate v kbps"
+                                        type="number"
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col>
+                                    <v-text-field
+                                        v-model="editedKvality.maxrate"
+                                        label="Maximální bitrate v kbps"
+                                        type="number"
+                                    ></v-text-field>
+                                </v-col>
+                                <v-col>
+                                    <v-text-field
+                                        v-model="editedKvality.bitrate"
+                                        label="Průměrný bitrate v kbps"
+                                        type="number"
+                                    ></v-text-field>
+                                </v-col>
+                            </v-row>
+                        </v-container>
+                    </v-card-text>
+                    <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="red darken-1" text @click="closeDialog()">
+                            Zavřít
+                        </v-btn>
+                        <v-btn
+                            color="green darken-1"
+                            text
+                            @click="saveEditDialog()"
+                        >
+                            Upravit
+                        </v-btn>
+                    </v-card-actions>
+                </v-card>
+            </v-dialog>
+        </v-row>
     </v-main>
 </template>
 <script>
@@ -147,7 +239,10 @@ import NotificationComponent from "../../Notifications/NotificationComponent";
 export default {
     data() {
         return {
+            kvalitaId: null,
+            editKvalityDialog: false,
             minBitrate: null,
+            editedKvality: [],
             maxBitrate: null,
             bitrate: null,
             sirka: null,
@@ -203,6 +298,7 @@ export default {
         },
 
         closeDialog() {
+            this.editKvalityDialog = false;
             this.createDialog = false;
             this.streamFormats = [];
             this.minBitrate = null;
@@ -267,6 +363,40 @@ export default {
                             currentObj.status = null;
                         }, 2000);
                     }
+                });
+        },
+        editKvality(kvalitaId) {
+            let currentObj = this;
+            axios
+                .post("kvality/get", {
+                    kvalitaId: kvalitaId
+                })
+                .then(function(response) {
+                    currentObj.loadStreamFormats();
+                    currentObj.editedKvality = response.data;
+                    currentObj.kvalitaId = kvalitaId;
+                    currentObj.editKvalityDialog = true;
+                });
+        },
+        saveEditDialog() {
+            let currentObj = this;
+            axios
+                .post("kvality/edit", {
+                    kvalitaId: this.kvalitaId,
+                    videoFormat: this.videoFormat,
+                    minBitrate: this.editedKvality.minrate,
+                    maxBitrate: this.editedKvality.maxrate,
+                    bitrate: this.editedKvality.bitrate,
+                    sirka: this.editedKvality.sirka,
+                    vyska: this.editedKvality.vyska
+                })
+                .then(function(response) {
+                    currentObj.status = response.data;
+                    currentObj.editKvalityDialog = false;
+                    currentObj.loadKvality();
+                    setTimeout(function() {
+                        currentObj.status = null;
+                    }, 2000);
                 });
         }
     }

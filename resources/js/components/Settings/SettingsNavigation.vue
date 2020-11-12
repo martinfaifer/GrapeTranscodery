@@ -73,6 +73,28 @@
                             <span>Kanály</span>
                         </v-tooltip>
 
+                         <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                                <v-btn
+                                    link
+                                    to="/settings/transcoders"
+                                    v-on="on"
+                                    icon
+                                    color="#777E8B"
+                                >
+                                    <v-icon
+                                        v-if="
+                                            $route.path === '/settings/transcoders'
+                                        "
+                                        color="blue"
+                                        >mdi-television</v-icon
+                                    >
+                                    <v-icon v-else>mdi-television</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Transcodéry</span>
+                        </v-tooltip>
+
                         <div>
                             <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">

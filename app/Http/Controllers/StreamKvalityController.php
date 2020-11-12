@@ -153,4 +153,68 @@ class StreamKvalityController extends Controller
 
         return StreamKvality::where('format_id', StreamFormat::where('code',  $request->formatCode)->first()->id)->get()->toArray();
     }
+
+
+
+    /**
+     * fn pro vyhledání jedné kvality pro editaci
+     *
+     * @param Request $request->kvalitaId
+     * @return array
+     */
+    public function get_one_kvality_for_edit(Request $request): array
+    {
+        if (!StreamKvality::where('id', $request->kvalitaId)->first()) {
+            return [
+                'status' => "error",
+                'msg' => "Nepodařilo se vyhledat kvalitu!"
+            ];
+        }
+
+        // výpis kvality
+        $kvalita = StreamKvality::where('id', $request->kvalitaId)->first();
+        $formatKvality = explode("x", $kvalita->kvalita);
+        return [
+            'sirka' => intval($formatKvality[0]),
+            'vyska' => intval($formatKvality[1]),
+            'minrate' => intval($kvalita->minrate),
+            'maxrate' => intval($kvalita->maxrate),
+            'bitrate' => intval($kvalita->bitrate)
+        ];
+    }
+
+
+    /**
+     * fn pro editaci kvality
+     *
+     * @param Request $request->kvalitaId, videoFormat, minBitrate, maxBitrate, bitrate, sirka, vyska
+     * @return array
+     */
+    public function kvalita_edit(Request $request): array
+    {
+        try {
+            $this->kvalita = $request->vyska . "x" . $request->sirka;
+            $this->meritko = $request->vyska . ":" . $request->sirka;
+            StreamKvality::where('id', $request->kvalitaId)->update(
+                [
+                    'format_id' => $request->videoFormat,
+                    'kvalita' => $this->kvalita,
+                    'scale' => $this->meritko,
+                    'minrate' => $request->minBitrate,
+                    'maxrate' => $request->maxBitrate,
+                    'bitrate' => $request->bitrate
+                ]
+            );
+
+            return [
+                'status' => "success",
+                'msg' => "Kvalita byla upraven"
+            ];
+        } catch (\Throwable $th) {
+            return [
+                'status' => "error",
+                'msg' => "Kvalitu se nepodařilo upravit"
+            ];
+        }
+    }
 }
