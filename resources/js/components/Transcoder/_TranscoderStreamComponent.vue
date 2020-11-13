@@ -20,8 +20,7 @@
                     :items="streams"
                     :search="search"
                 >
-
-                     <template v-slot:item.status="{ item }">
+                    <template v-slot:item.status="{ item }">
                         <span v-if="item.status == 'active'">
                             <span class="green--text">
                                 <strong>
@@ -48,6 +47,7 @@
                     <template v-slot:item.akce="{ item }">
                         <!-- mdi-play -->
                         <v-btn
+                            v-if="userRole != 'nahled'"
                             icon
                             :loading="loading"
                             small
@@ -61,6 +61,7 @@
 
                         <!-- mdi-stop -->
                         <v-btn
+                            v-if="userRole != 'nahled'"
                             icon
                             small
                             :loading="loading"
@@ -74,7 +75,7 @@
             </div>
             <div v-else-if="streams == null">
                 <v-alert type="info">
-                    Na transcodéru nejsu žádně streamy
+                    Na transcodéru nejsou žádně streamy
                 </v-alert>
             </div>
         </v-card>
@@ -85,6 +86,7 @@ import NotificationComponent from "../Notifications/NotificationComponent";
 export default {
     data() {
         return {
+            userRole: null,
             loadingInterval: null,
             loading: false,
             status: null,
@@ -145,6 +147,7 @@ export default {
     },
     created() {
         this.loadStreams();
+        this.loadUser();
     },
 
     components: {
@@ -152,6 +155,16 @@ export default {
     },
 
     methods: {
+        loadUser() {
+            let currentObj = this;
+            window.axios.get("user").then(response => {
+                if (response.data.status == "error") {
+                    currentObj.userRole = [];
+                } else {
+                    currentObj.userRole = response.data.user_role;
+                }
+            });
+        },
         loadStreams() {
             let currentObj = this;
             axios
@@ -206,7 +219,7 @@ export default {
                 });
         }
     },
-     mounted() {
+    mounted() {
         this.loadingInterval = setInterval(
             function() {
                 this.loadStreams();

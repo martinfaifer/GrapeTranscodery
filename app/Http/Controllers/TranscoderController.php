@@ -7,10 +7,11 @@ use App\Models\transcoder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
+use JJG\Ping;
 
 class TranscoderController extends Controller
 {
-    public static function get_transcoders()
+    public function get_transcoders()
     {
         if (!transcoder::first()) {
             return [
@@ -25,6 +26,32 @@ class TranscoderController extends Controller
                 'ip' => $transcoder->ip,
                 'status' => $transcoder->status,
                 'streamCount' => StreamController::count_streams_on_transcoder($transcoder->id)
+            );
+        }
+
+        return [
+            'status' => "success",
+            'data' => $output
+        ];
+    }
+
+
+    public function transcoders_and_telemetrie()
+    {
+        if (!transcoder::first()) {
+            return [
+                'status' => "empty"
+            ];
+        }
+
+        foreach (transcoder::get() as $transcoder) {
+            $output[] = array(
+                'id' => $transcoder->id,
+                'name' => $transcoder->name,
+                'ip' => $transcoder->ip,
+                'status' => $transcoder->status,
+                'streamCount' => StreamController::count_streams_on_transcoder($transcoder->id),
+                'telemetrie' => $this->telemetrie(trim($transcoder->ip), $transcoder->status)
             );
         }
 
@@ -51,6 +78,25 @@ class TranscoderController extends Controller
                 'status' => "error",
                 'msg' => "Nepodařilo se připojit k Transcodéru"
             ];
+        }
+    }
+
+    /**
+     * fn pro výpis telemtrie
+     *
+     * @param string $transcoderIp, status
+     */
+    public static function telemetrie($transcoderIp, string $status)
+    {
+        if ($status == 'success') {
+            try {
+                $response = Http::get('http://' . $transcoderIp . '/tcontrol.php?CMD=NVSTATS');
+                return json_decode($response, true);
+            } catch (\Throwable $th) {
+                return [];
+            }
+        } else {
+            return [];
         }
     }
 
@@ -161,6 +207,37 @@ class TranscoderController extends Controller
                 'status' => "error",
                 'msg' => "Nepodařilo se spustit stream"
             ];
+        }
+    }
+
+    /**
+     * fn pro automaticke spusteni streamu
+     *
+     * @param string $transcoderIp
+     * @param string $streamId
+     * @return void
+     */
+    public static function start_stream_from_backend(string $transcoderIp, string $streamId): void
+    {
+
+        try {
+            $response = Http::get('http://' . $transcoderIp . '/tcontrol.php', [
+                'FFMPEG' => base64_encode(Stream::where('id', $streamId)->first()->script),
+                'CMD' => "START"
+            ]);
+            //
+            //
+            //
+            $response = json_decode($response, true);
+            if ($response["STATUS"] === "TRUE") {
+                // vyhledání pidu a aktualizace záznamu
+                Stream::where('id', $streamId)->update(['pid' => $response["PID"], 'status' => "active"]);
+            }
+            //
+            //
+            //
+        } catch (\Throwable $th) {
+            //
         }
     }
 
@@ -477,10 +554,34 @@ class TranscoderController extends Controller
                         foreach (Stream::where('status', "active")->where('transcoder', $transcoder->id)->get() as $stream) {
                             // dd($stream->pid);
                             if (!Str::contains($pidsFromTranscodersString, $stream->pid)) {
-                                Stream::where('id', $stream->id)->update(['status' => "issue"]);
+                                if ($stream->status != "issue") {
+                                    Stream::where('id', $stream->id)->update(['status' => "issue"]);
+                                    MailController::send_error_stream($stream->nazev);
+                                }
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * fn pro kontrolu zda jsou dostupne transcodery
+     *
+     * @return void
+     */
+    public static function check_transcoder(): void
+    {
+        if (transcoder::first()) {
+            foreach (transcoder::get() as $transcoder) {
+                $ping = new Ping($transcoder->ip);
+                $latency = $ping->ping();
+                if ($latency !== false) {
+                    transcoder::where('id', $transcoder->id)->update(['status' => "success"]);
+                } else {
+                    transcoder::where('id', $transcoder->id)->update(['status' => "offline"]);
                 }
             }
         }

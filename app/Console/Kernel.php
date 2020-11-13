@@ -26,6 +26,10 @@ class Kernel extends ConsoleKernel
     {
         // kontrola zda streamy funguje
         $schedule->command('stream:checkIfAllStreamsRunning')->everyMinute()->runInBackground();
+        // pokus spustit stream, který nefunguje
+        $schedule->command('stream:tryStartIssuedStream')->everyMinute()->runInBackground();
+        // kontrola transcodérů
+        $schedule->command('transcoder:ping')->everyMinute()->runInBackground();
     }
 
     /**

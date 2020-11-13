@@ -13,7 +13,7 @@
                         autofocus
                         v-model="search"
                         append-icon="mdi-magnify"
-                        label="Vyhledat stream"
+                        label="Vyhledat transcoder"
                         single-line
                         hide-details
                     ></v-text-field>

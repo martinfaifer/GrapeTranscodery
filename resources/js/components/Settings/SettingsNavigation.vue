@@ -6,7 +6,7 @@
                     <v-toolbar color="transparent" flat dense dark>
                         <v-spacer></v-spacer>
 
-                        <v-tooltip bottom>
+                        <!-- <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
                                 <v-btn
                                     link
@@ -26,9 +26,29 @@
                                 </v-btn>
                             </template>
                             <span>Dashboard</span>
+                        </v-tooltip> -->
+
+                        <v-tooltip bottom>
+                            <template v-slot:activator="{ on }">
+                                <v-btn
+                                    link
+                                    to="/settings/streams"
+                                    v-on="on"
+                                    icon
+                                    color="#777E8B"
+                                >
+                                    <v-icon
+                                        v-if="
+                                            $route.path === '/settings/streams'
+                                        "
+                                        color="blue"
+                                        >mdi-television-guide</v-icon
+                                    >
+                                    <v-icon v-else>mdi-television-guide</v-icon>
+                                </v-btn>
+                            </template>
+                            <span>Kanály</span>
                         </v-tooltip>
-
-
                         <v-tooltip bottom>
                             <template v-slot:activator="{ on }">
                                 <v-btn
@@ -55,28 +75,6 @@
                             <template v-slot:activator="{ on }">
                                 <v-btn
                                     link
-                                    to="/settings/streams"
-                                    v-on="on"
-                                    icon
-                                    color="#777E8B"
-                                >
-                                    <v-icon
-                                        v-if="
-                                            $route.path === '/settings/streams'
-                                        "
-                                        color="blue"
-                                        >mdi-television-guide</v-icon
-                                    >
-                                    <v-icon v-else>mdi-television-guide</v-icon>
-                                </v-btn>
-                            </template>
-                            <span>Kanály</span>
-                        </v-tooltip>
-
-                         <v-tooltip bottom>
-                            <template v-slot:activator="{ on }">
-                                <v-btn
-                                    link
                                     to="/settings/transcoders"
                                     v-on="on"
                                     icon
@@ -84,7 +82,8 @@
                                 >
                                     <v-icon
                                         v-if="
-                                            $route.path === '/settings/transcoders'
+                                            $route.path ===
+                                                '/settings/transcoders'
                                         "
                                         color="blue"
                                         >mdi-television</v-icon
@@ -123,7 +122,7 @@
                         </div>
 
                         <div>
-                            <v-tooltip bottom>
+                            <!-- <v-tooltip bottom>
                                 <template v-slot:activator="{ on }">
                                     <v-btn
                                         link
@@ -144,7 +143,7 @@
                                     </v-btn>
                                 </template>
                                 <span>Nastavení Alertingu</span>
-                            </v-tooltip>
+                            </v-tooltip> -->
                         </div>
                         <v-spacer></v-spacer>
                     </v-toolbar>

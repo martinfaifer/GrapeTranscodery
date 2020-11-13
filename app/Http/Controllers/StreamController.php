@@ -77,6 +77,12 @@ class StreamController extends Controller
             ];
         }
 
+        if (!Stream::where('transcoder', transcoder::where('ip', $request->transcoderIp)->first()->id)->first()) {
+            return [
+                'status' => "empty"
+            ];
+        }
+
         foreach (Stream::where('transcoder', transcoder::where('ip', $request->transcoderIp)->first()->id)->get() as $stream) {
             $output[] = array(
                 'id' => $stream->id,
@@ -390,6 +396,46 @@ class StreamController extends Controller
         return [
             'status' => "success",
             'msg' => "Stream byl úspěšně odebrán"
+        ];
+    }
+
+
+    /**
+     * fn pro pokus spustit stream, který je ve stavu issue
+     *
+     * @return void
+     */
+    public static function try_start_stream_with_issue(): void
+    {
+
+        if (Stream::where('status', "issue")->first()) {
+
+            foreach (Stream::where('status', "issue")->get() as $stream) {
+                TranscoderController::start_stream_from_backend(
+                    transcoder::where('id', $stream->id)->first()->ip,
+                    $stream->id
+                );
+            }
+        }
+    }
+
+    /**
+     * fn pro vyhledání streamu pro status issue
+     *
+     * @return array
+     */
+    public static function return_status_issue(): array
+    {
+        if (!Stream::where('status', "issue")->first()) {
+            return [
+                'status' => "empty"
+            ];
+        }
+
+        return [
+            'count' => Stream::where('status', "issue")->get()->count(),
+            'data' => Stream::where('status', "issue")->get('nazev')->toArray()
+
         ];
     }
 }
