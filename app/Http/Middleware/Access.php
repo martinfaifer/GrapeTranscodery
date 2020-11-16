@@ -26,8 +26,7 @@ class Access
     public function handle(Request $request, Closure $next)
     {
         $user = UserController::getLoggedUser();
-        // dd($user["status"]);
-        if ($user["status"] == "error") {
+        if (empty($user)) {
             return abort(404);
         } else {
             return $next($request);

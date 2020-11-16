@@ -49,6 +49,15 @@ class UserController extends Controller
         }
     }
 
+    /**
+     * odhlášení uživatele
+     *
+     * @return void
+     */
+    public function lognout()
+    {
+        Auth::logout();
+    }
 
     /**
      * funkce na získání informací o přihlášeném uživateli

@@ -257,9 +257,7 @@ export default {
         logOut() {
             let currentObj = this;
             axios.get("logout").then(response => {
-                if (response.data.status === "success") {
-                    currentObj.$router.push("/login");
-                }
+                currentObj.$router.push("/login");
             });
         },
 
