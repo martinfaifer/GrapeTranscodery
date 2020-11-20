@@ -1,6 +1,6 @@
 <template>
     <v-main>
-        <v-container class="mt-12">
+        <v-container class="mt-12" fluid>
             <v-card flat color="transparent">
                 <v-card-title>
                     <v-text-field

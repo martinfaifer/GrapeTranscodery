@@ -10,7 +10,7 @@
                     >
                         <v-hover v-slot:default="{ hover }">
                             <v-card
-                                color="#777E8B"
+                                color="#586776"
                                 link
                                 :to="'transcoder/' + transcoder.ip"
                                 :elevation="hover ? 24 : 0"
@@ -81,6 +81,20 @@
                                                     <strong>
                                                         {{
                                                             transcoder.streamCount
+                                                        }}
+                                                    </strong>
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </v-row>
+                                     <v-row class="body-2 mt-1">
+                                        <div>
+                                            <span class="white--text">
+                                                Počet nefunkčních streamů:
+                                                <span class="ml-1">
+                                                    <strong class="red--text">
+                                                        {{
+                                                            transcoder.streamIssueCount
                                                         }}
                                                     </strong>
                                                 </span>

@@ -6,7 +6,7 @@
             :status="status"
         ></notification-component>
         <v-app>
-            <v-app-bar color="#777E8B" fixed dense>
+            <v-app-bar color="#586776" fixed dense>
                 <v-app-bar-nav-icon
                     color="white"
                     @click="drawer = true"
@@ -298,6 +298,7 @@ export default {
             function() {
                 try {
                     this.loadUser();
+                    this.loadProblematicStreams();
                 } catch (error) {}
             }.bind(this),
             2000

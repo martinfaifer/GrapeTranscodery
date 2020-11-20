@@ -7,6 +7,7 @@ use App\Http\Controllers\TranscoderController;
 use App\Http\Controllers\UserController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -121,3 +122,24 @@ Route::post('stream/script', [StreamController::class, 'stream_script'])->middle
 Route::post('stream/script/edit', [StreamController::class, 'stream_script_edit'])->middleware('access');
 // odebrání stream ze systému, pouze pokud je stream v jinem stavu nez active ( aktuálně transcodován )
 Route::post('stream/delete', [StreamController::class, 'stream_delete'])->middleware('access');
+
+
+// test¨
+Route::get('test', function () {
+    $response = Http::get('http://172.17.3.82/tcontrol.php', [
+        'CMD' => "PROBE",
+        'LOCK' => "FALSE",
+        'SRC' => "udp://239.250.5.136:1234"
+    ]);
+
+    $response = json_decode($response, true);
+    // return $response;
+    if ($response["STATUS"] === "TRUE") {
+
+
+        // status success => vyhledání streamů
+
+        return TranscoderController::create_ffprobe_output_for_frontend($response);
+    } else {
+    }
+});

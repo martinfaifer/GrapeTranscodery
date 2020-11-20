@@ -26,6 +26,20 @@ class StreamController extends Controller
         return Stream::where('transcoder', $transcoderId)->get()->count();
     }
 
+    /**
+     * fn pro výpis poctu nefunknčních streamů na stra
+     *
+     * @param string $transcoderId
+     * @return string
+     */
+    public static function count_issue_streams_on_transcoder(string $transcoderId): string
+    {
+        if (!Stream::where('transcoder', $transcoderId)->where('status', "issue")->first()) {
+            return "0";
+        }
+        return Stream::where('transcoder', $transcoderId)->where('status', "issue")->get()->count();
+    }
+
 
     /**
      * funkce na vrácení všech stramů
@@ -412,7 +426,7 @@ class StreamController extends Controller
 
             foreach (Stream::where('status', "issue")->get() as $stream) {
                 TranscoderController::start_stream_from_backend(
-                    transcoder::where('id', $stream->id)->first()->ip,
+                    transcoder::where('id', $stream->transcoder)->first()->ip,
                     $stream->id
                 );
             }

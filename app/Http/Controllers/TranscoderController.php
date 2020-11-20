@@ -11,6 +11,11 @@ use JJG\Ping;
 
 class TranscoderController extends Controller
 {
+    /**
+     * základní výpis transcoderů
+     *
+     * @return array
+     */
     public function get_transcoders()
     {
         if (!transcoder::first()) {
@@ -36,6 +41,12 @@ class TranscoderController extends Controller
     }
 
 
+
+    /**
+     * výpis transcodérů + hw vyuzití ( náhled )
+     *
+     * @return array
+     */
     public function transcoders_and_telemetrie()
     {
         if (!transcoder::first()) {
@@ -51,6 +62,7 @@ class TranscoderController extends Controller
                 'ip' => $transcoder->ip,
                 'status' => $transcoder->status,
                 'streamCount' => StreamController::count_streams_on_transcoder($transcoder->id),
+                'streamIssueCount' => StreamController::count_issue_streams_on_transcoder($transcoder->id),
                 'telemetrie' => $this->telemetrie(trim($transcoder->ip), $transcoder->status)
             );
         }
@@ -217,7 +229,7 @@ class TranscoderController extends Controller
      * @param string $streamId
      * @return void
      */
-    public static function start_stream_from_backend(string $transcoderIp, string $streamId): void
+    public static function start_stream_from_backend($transcoderIp,  $streamId): void
     {
 
         try {
@@ -232,6 +244,10 @@ class TranscoderController extends Controller
             if ($response["STATUS"] === "TRUE") {
                 // vyhledání pidu a aktualizace záznamu
                 Stream::where('id', $streamId)->update(['pid' => $response["PID"], 'status' => "active"]);
+
+                // notifikace
+                $stream = Stream::where('id', $streamId)->first();
+                MailController::send_success_stream($stream->nazev);
             }
             //
             //
@@ -360,12 +376,19 @@ class TranscoderController extends Controller
 
 
                 if ($streamData["codec_type"] == "audio") {
+
+                    if (array_key_exists("tags", $streamData)) {
+                        $lang = $streamData["tags"]["language"];
+                    } else {
+                        $lang = "nepodarilo se detekovat audio";
+                    }
+
                     $outputAudio[] = array(
                         'index' => $streamData["index"] ?? null,
-                        'popis' => $streamData["codec_name"] . (" / " . $streamData["tags"]["language"] ?? "nepodarilo se detekovat audio"),
+                        'popis' => $streamData["codec_name"] . (" / " . $lang),
                         'codec_name' => $streamData["codec_name"] ?? null,
                         'codec_type' => $streamData["codec_type"] ?? null,
-                        'lang' => $streamData["tags"]["language"] ?? null
+                        'lang' => $lang ?? null
                     );
                 }
             }
