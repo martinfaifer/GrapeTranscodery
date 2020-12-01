@@ -17,21 +17,22 @@ class FFmpegScriptController extends Controller
      * @param [type] $dst
      * @param [type] $bitrateScale
      * @param [type] $isRadioChannel
+     * @param [type] $serviceProvider ( příklad GRAPE_Q10)
+     * @param [type] $serviceName (příklad HBO_1080p )
      * @return string
      */
-    public static function ffmpeg_script_dst_output_part($videoFormat, $bitrate, $bitrateMin, $bitrateMax, $transcoderSpeed, $dst, $bitrateScale, $isRadioChannel): string
+    public static function ffmpeg_script_dst_output_part($videoFormat, $bitrate, $bitrateMin, $bitrateMax, $transcoderSpeed, $dst, $bitrateScale, $isRadioChannel, $serviceProvider, $serviceName): string
     {
         $script = " -c:v " . $videoFormat . " -qmin 0 -qmax 50 -c:a libfdk_aac -b:a 128k -b:v "
             . $bitrate . "k -minrate:v "
             . $bitrateMin . "k -maxrate:v "
             . $bitrateMax . "k -g 50 -bufsize 6M -preset "
-            . $transcoderSpeed . " -vf scale_npp=" . $bitrateScale . " -f mpegts "
+            . $transcoderSpeed . " -vf scale_npp=" . $bitrateScale . " -metadata service_provider=\"{$serviceProvider}\" -metadata service_name=\"{$serviceName}\"" . " -f mpegts "
             . $dst . "?pkt_size=1316";
 
 
         return $script;
     }
-
 
     /**
      * fn pro vytvoření skriptu pro spustení streamu

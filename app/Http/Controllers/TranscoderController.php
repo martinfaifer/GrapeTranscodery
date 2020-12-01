@@ -254,6 +254,7 @@ class TranscoderController extends Controller
             //
         } catch (\Throwable $th) {
             //
+            // stream selhal => nic neprovedeme a necháme být, aby necrashnul cely process
         }
     }
 

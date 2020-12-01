@@ -139,6 +139,9 @@ class StreamController extends Controller
 
         StreamValidationController::validate_stream_inputs($request);
 
+        // transcoder
+        $transcoder = transcoder::where('id', $request->transcoderId)->first();
+        $transcoderNameEploded = explode("_", $transcoder->name);
         // vsechny inputy jsou v pořádku, začíná se vytvářet script pro spustení kanálu pro ffmpeg, který se následně zašle do transcoderu
 
         if ($request->dst1) {
@@ -151,7 +154,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst1),
                 $kvalitaForBitrateDst1->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
             );
         }
 
@@ -165,7 +170,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst2),
                 $kvalitaForBitrateDst2->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
             );
         }
 
@@ -179,7 +186,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst3),
                 $kvalitaForBitrateDst3->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
             );
         }
 
@@ -263,6 +272,10 @@ class StreamController extends Controller
 
         StreamValidationController::validate_stream_inputs($request);
 
+        // transcoder
+        $transcoder = transcoder::where('id', $request->transcoderId)->first();
+        $transcoderNameEploded = explode("_", $transcoder->name);
+
         // vsechny inputy jsou v pořádku, začíná se vytvářet script pro spustení kanálu pro ffmpeg, který se následně zašle do transcoderu
 
         if ($request->dst1) {
@@ -275,7 +288,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst1),
                 $kvalitaForBitrateDst1->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
             );
         }
 
@@ -289,7 +304,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst2),
                 $kvalitaForBitrateDst2->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
             );
         }
 
@@ -303,7 +320,9 @@ class StreamController extends Controller
                 "fast",
                 trim($request->dst3),
                 $kvalitaForBitrateDst3->scale,
-                false
+                false,
+                "GRAPE_" . $transcoderNameEploded[1],
+                $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
             );
         }
 
