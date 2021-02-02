@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware('auth:api')->get('/user', function (Request $request) {
+//     return $request->user();
+// });
+
+Route::post('/transcoder', [ApiController::class, 'return_transcoder']);
+Route::post('/stream', [ApiController::class, 'find_stream']);
+Route::post('/stream/status', [ApiController::class, 'return_streamStatus_by_streamId']);
+// Route::post('/stream/restart', [ApiController::class, 'return_reboot_status']);

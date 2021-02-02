@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Stream;
 use App\Models\transcoder;
+use BeyondCode\LaravelWebSockets\WebSockets\Channels\Channel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
@@ -155,6 +156,87 @@ class TranscoderController extends Controller
             return [
                 'status' => "error",
                 'msg' => "Nepodařilo se zastavit stream"
+            ];
+        }
+    }
+
+    /**
+     * restart streamu na transcoderu
+     *
+     * @param [type] $streamPid
+     * @param [type] $streamId
+     * @param [type] $transcoderId
+     * @return void
+     */
+    public static function restart_running_stream_by_api($streamPid, $streamId, $transcoderId)
+    {
+
+        $transcoderIp = transcoder::find($transcoderId)->ip;
+        $stream = Stream::find($streamId);
+
+        if ($stream->status === 'active') {
+
+            // pouze aktivní streamu mohou být restartovány 
+
+            try {
+                $response = Http::get('http://' . $transcoderIp . '/tcontrol.php', [
+                    'PID' => $streamPid,
+                    'CMD' => "KILL"
+                ]);
+                $response = json_decode($response, true);
+                if ($response["STATUS"] === "TRUE") {
+
+                    // zmena pidu na null a statusu na STOP
+                    $stream->update(['pid' => null, 'status' => "STOP"]);
+
+                    // zavolání startu streamu
+                    try {
+                        $response = Http::get('http://' . $transcoderIp . '/tcontrol.php', [
+                            'FFMPEG' => base64_encode($stream->script),
+                            'CMD' => "START"
+                        ]);
+                        $response = json_decode($response, true);
+                        if ($response["STATUS"] === "TRUE") {
+                            // vyhledání pidu a aktualizace záznamu
+                            $stream->update(['pid' => $response["PID"], 'status' => "active"]);
+
+                            // stream se restartoval
+                            return [
+                                'status' => "success",
+                                'msg' => "Restartovano"
+                            ];
+                        } else {
+                            // stream se nepodařilo spustit
+                            return [
+                                'status' => "error",
+                                'msg' => "Nepodařilo se spustit stream"
+                            ];
+                        }
+                    } catch (\Throwable $th) {
+                        // error 500
+                        return [
+                            'status' => "error",
+                            'msg' => "Selhala komunikace s transcoderem pro Startu"
+                        ];
+                    }
+                } else {
+                    // nepodarilo se zastavit ffmpeg
+                    return [
+                        'status' => "error",
+                        'msg' => "Stream se nepodařilo zastavit"
+                    ];
+                }
+            } catch (\Throwable $th) {
+                // error 500
+                return [
+                    'status' => "error",
+                    'msg' => "Selhala komunikace s transcoderem pro KILLu"
+                ];
+            }
+        } else {
+            return [
+                'status' => "error",
+                'msg' => "Stream nemohl být restartován jelikož nebyl ve stavu active"
             ];
         }
     }
@@ -606,6 +688,16 @@ class TranscoderController extends Controller
                     transcoder::where('id', $transcoder->id)->update(['status' => "success"]);
                 } else {
                     transcoder::where('id', $transcoder->id)->update(['status' => "offline"]);
+                    // update vsech streamu zalozenych na transcoderu na status STOP
+                    if (Stream::where('transcoder', $transcoder->id)->first()) {
+                        foreach (Stream::where('transcoder', $transcoder->id)->get() as $streamOnTranscoder) {
+                            $streamOnTranscoder->update(
+                                [
+                                    'status' => "STOP"
+                                ]
+                            );
+                        }
+                    }
                 }
             }
         }

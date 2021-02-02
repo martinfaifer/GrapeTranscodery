@@ -270,7 +270,22 @@ class StreamController extends Controller
         $dst3 = "";
         // validace vstupů
 
-        StreamValidationController::validate_stream_inputs($request);
+        if (empty($request->videoIndex) && is_null($request->videoIndex)) {
+
+            // edituje se pouze zmena na transcoderu
+
+            Stream::where('id', $request->streamId)->update([
+                'transcoder' => $request->transcoderId,
+                'status' => "STOP"
+            ]);
+
+            return [
+                'status' => "success",
+                'msg' => "Stream byl upraven"
+            ];
+        }
+
+        // StreamValidationController::validate_stream_inputs($request);
 
         // transcoder
         $transcoder = transcoder::where('id', $request->transcoderId)->first();
@@ -340,7 +355,7 @@ class StreamController extends Controller
             $dst2,
             $dst3
         );
-        // Založení streamu
+        // Editace streamu
         Stream::where('id', $request->streamId)->update([
             'nazev' => $request->stream_name,
             'src' => trim($request->stream_src),
