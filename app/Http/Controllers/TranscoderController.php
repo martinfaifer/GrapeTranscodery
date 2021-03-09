@@ -25,7 +25,7 @@ class TranscoderController extends Controller
             ];
         }
 
-        foreach (transcoder::get() as $transcoder) {
+        foreach (transcoder::all()->sortBy('name') as $transcoder) {
             $output[] = array(
                 'id' => $transcoder->id,
                 'name' => $transcoder->name,
@@ -56,7 +56,7 @@ class TranscoderController extends Controller
             ];
         }
 
-        foreach (transcoder::get() as $transcoder) {
+        foreach (transcoder::all()->sortBy('name') as $transcoder) {
             $output[] = array(
                 'id' => $transcoder->id,
                 'name' => $transcoder->name,
@@ -461,7 +461,11 @@ class TranscoderController extends Controller
                 if ($streamData["codec_type"] == "audio") {
 
                     if (array_key_exists("tags", $streamData)) {
-                        $lang = $streamData["tags"]["language"];
+                        if (array_key_exists("language", $streamData["tags"])) {
+                            $lang = $streamData["tags"]["language"];
+                        } else {
+                            $lang = "nepodarilo se detekovat audio";
+                        }
                     } else {
                         $lang = "nepodarilo se detekovat audio";
                     }
@@ -626,6 +630,12 @@ class TranscoderController extends Controller
     public function delete_transcoder(Request $request): array
     {
         try {
+            if (Stream::where('transcoder', $request->transcoderId)->first()) {
+                return [
+                    'status' => "error",
+                    'msg' => "Na transcoder jsou vázané kanály!"
+                ];
+            }
             transcoder::where('id', $request->transcoderId)->delete();
             return [
                 'status' => "success",

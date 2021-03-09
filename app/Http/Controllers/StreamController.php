@@ -53,6 +53,7 @@ class StreamController extends Controller
         }
 
         foreach (Stream::get() as $stream) {
+            $transcoder = transcoder::where('id', $stream->transcoder)->first();
             $output[] = array(
                 'id' => $stream->id,
                 'nazev' => $stream->nazev,
@@ -66,8 +67,8 @@ class StreamController extends Controller
                 'dst4' => $stream->dst4,
                 'format' => $stream->format,
                 'status' => $stream->status,
-                'transcoder' => transcoder::where('id', $stream->transcoder)->first()->name,
-                'transcoderIp' => transcoder::where('id', $stream->transcoder)->first()->ip
+                'transcoder' => $transcoder->name ?? null,
+                'transcoderIp' => $transcoder->ip ?? null
 
             );
         }

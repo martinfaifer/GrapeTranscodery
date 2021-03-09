@@ -22,10 +22,11 @@
         "vue-template-compiler": "^2.6.12"
     },
     "dependencies": {
-        "chart.js": "^2.9.4",
         "highcharts": "^8.2.2",
+        "chart.js": "^2.9.4",
         "larasocket-js": "^1.0.16",
         "vue": "^2.6.12",
+        "vue-apexcharts": "^1.6.0",
         "vue-chartkick": "^0.6.1",
         "vue-router": "^3.4.8",
         "vuetify": "^2.3.16",

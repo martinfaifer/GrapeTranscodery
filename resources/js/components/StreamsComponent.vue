@@ -19,6 +19,7 @@
                     :items="streams"
                     :search="search"
                     class="elevation-0 body-2"
+                    :items-per-page="itemsPerPage"
                 >
                     <template v-slot:item.format="{ item }">
                         <span v-if="item.format == 'H.264'">
@@ -62,9 +63,11 @@
                     </template>
 
                     <template v-slot:item.transcoder="{ item }">
-                        <router-link target="_blank" :to="'transcoder/' + item.transcoderIp">{{
-                            item.transcoder
-                        }}</router-link>
+                        <router-link
+                            target="_blank"
+                            :to="'transcoder/' + item.transcoderIp"
+                            >{{ item.transcoder }}</router-link
+                        >
                     </template>
                 </v-data-table>
             </v-card>
@@ -74,6 +77,7 @@
 <script>
 export default {
     data: () => ({
+        itemsPerPage: 20,
         search: "",
         streams: [],
         headers: [

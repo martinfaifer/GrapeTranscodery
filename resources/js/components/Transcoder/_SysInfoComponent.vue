@@ -1,12 +1,12 @@
 <template>
     <div>
-        <v-container>
+        <v-container fluid>
             <!-- konec zobrazeni nazvu encoderu -->
             <v-row class="justify-center body-2">
                 <!-- Využitá RAM -->
                 <v-spacer></v-spacer>
                 <v-row>
-                    <div v-if="ramPercent < '75'">
+                    <div v-if="parseInt(ramPercent) < 75">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -24,12 +24,12 @@
                             </small>
                         </v-progress-circular>
                     </div>
-                    <div v-if="ramPercent >= '75' && ramPercent < '88'">
+                    <div v-if="parseInt(ramPercent) >= 75 && parseInt(ramPercent) < 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
                             :width="4"
-                            :value="ramPercent"
+                            :value="parseInt(ramPercent)"
                             color="orange"
                         >
                             <small>
@@ -42,12 +42,12 @@
                             </small></v-progress-circular
                         >
                     </div>
-                    <div v-if="ramPercent >= '88'">
+                    <div v-if="parseInt(ramPercent) >= 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
                             :width="4"
-                            :value="ramPercent"
+                            :value="parseInt(ramPercent)"
                             color="red"
                         >
                             <small>
@@ -68,7 +68,7 @@
                     v-bind:key="encoder.id"
                     v-show="encoder.encoder_util"
                 >
-                    <div v-if="encoder.encoder_util <= '75 %'">
+                    <div v-if="encoder.encoder_util <= '75 %' ">
                         <v-progress-circular
                             class="mt-2 "
                             :size="150"
@@ -121,7 +121,7 @@
                     v-bind:key="decoder.id"
                     v-show="decoder.decoder_util"
                 >
-                    <div v-if="decoder.decoder_util <= '75 %'">
+                    <div v-if="decoder.decoder_util <= '75 %' ">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -177,7 +177,7 @@
                     v-bind:key="gpu.id"
                     v-show="gpu.gpu_util"
                 >
-                    <div v-if="gpu.gpu_util <= '75 %'">
+                    <div v-if="gpu.gpu_util <= '75 %' ">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -288,6 +288,143 @@
                     </v-progress-circular>
                 </v-row>
             </v-row>
+
+            <!-- CPU per core blok -->
+            <v-btn v-if="!cpuStat" class="mt-3" text outlined small color="info" @click="cpuStat = !cpuStat">
+                Zobrazit využití CPU
+            </v-btn>
+            <v-btn v-if="cpuStat" class="mt-3" text outlined small color="info" @click="cpuStat = !cpuStat">
+                Skrýt využití CPU
+            </v-btn>
+
+            <div class="justify-center body-2 mt-3 ml-3 mt-3" v-show="cpuStat">
+                <div v-for="(item, index) in cpus" :key="index">
+                    <v-row class="text-center">
+                        <v-col cols="12" sm="12" md="3" lg="3">
+                            <strong>
+                                {{ index }} - uživatel - {{ item.user }} %
+                            </strong>
+                            <v-progress-linear
+                                v-if="parseInt(item.user) <= 50"
+                                class="mt-3"
+                                color="success"
+                                :buffer-value="parseInt(item.user)"
+                                :value="parseInt(item.user)"
+                                stream
+                            ></v-progress-linear>
+                            <v-progress-linear
+                                v-if="parseInt(item.user) >= 51 && parseInt(item.user) <= 90"
+                                class="mt-3"
+                                color="orange"
+                                :buffer-value="parseInt(item.user)"
+                                :value="parseInt(item.user)"
+                                stream
+                            ></v-progress-linear>
+
+                            <v-progress-linear
+                                v-if="parseInt(item.user) >= 91"
+                                class="mt-3"
+                                color="error"
+                                :buffer-value="parseInt(item.user)"
+                                :value="parseInt(item.user)"
+                                stream
+                            ></v-progress-linear>
+                        </v-col>
+
+                        <v-col cols="12" sm="12" md="3" lg="3">
+                            <strong>
+                                {{ index }} - nice - {{ item.nice }} %
+                            </strong>
+                            <v-progress-linear
+                                v-if="parseInt(item.nice) <= 50"
+                                class="mt-3"
+                                color="success"
+                                :buffer-value="parseInt(item.nice)"
+                                :value="parseInt(item.nice)"
+                                stream
+                            ></v-progress-linear>
+                            <v-progress-linear
+                                v-if="parseInt(item.nice) >= 51 && parseInt(item.nice) <= 90"
+                                class="mt-3"
+                                color="orange"
+                                :buffer-value="parseInt(item.nice)"
+                                :value="parseInt(item.nice)"
+                                stream
+                            ></v-progress-linear>
+
+                            <v-progress-linear
+                                v-if="parseInt(item.nice) >= 91"
+                                class="mt-3"
+                                color="error"
+                                :buffer-value="parseInt(item.nice)"
+                                :value="parseInt(item.nice)"
+                                stream
+                            ></v-progress-linear>
+                        </v-col>
+
+                        <v-col cols="12" sm="12" md="3" lg="3">
+                            <strong>
+                                {{ index }} - systém - {{ item.sys }} %
+                            </strong>
+                            <v-progress-linear
+                                v-if="parseInt(item.sys) <= 50"
+                                class="mt-3"
+                                color="success"
+                                :buffer-value="parseInt(item.sys)"
+                                :value="parseInt(item.sys)"
+                                stream
+                            ></v-progress-linear>
+                            <v-progress-linear
+                                v-if="parseInt(item.sys) >= 51 && parseInt(item.sys) <= 90"
+                                class="mt-3"
+                                color="orange"
+                                :buffer-value="parseInt(item.sys)"
+                                :value="parseInt(item.sys)"
+                                stream
+                            ></v-progress-linear>
+
+                            <v-progress-linear
+                                v-if="parseInt(item.sys) >= 91"
+                                class="mt-3"
+                                color="error"
+                                :buffer-value="parseInt(item.sys)"
+                                :value="parseInt(item.sys)"
+                                stream
+                            ></v-progress-linear>
+                        </v-col>
+
+                        <v-col cols="12" sm="12" md="3" lg="3">
+                            <strong>
+                                {{ index }} - idle - {{ item.idle }} %
+                            </strong>
+                            <v-progress-linear
+                                v-if="parseInt(item.idle) === 100"
+                                class="mt-3"
+                                color="success"
+                                :buffer-value="parseInt(item.idle)"
+                                :value="parseInt(item.idle)"
+                                stream
+                            ></v-progress-linear>
+                            <v-progress-linear
+                                v-if="parseInt(item.idle) < 100 && parseInt(item.idle) >= 30"
+                                class="mt-3"
+                                color="green lighten-2"
+                                :buffer-value="parseInt(item.idle)"
+                                :value="parseInt(item.idle)"
+                                stream
+                            ></v-progress-linear>
+                            <v-progress-linear
+                                v-if="parseInt(item.idle) < 30"
+                                class="mt-3"
+                                color="error"
+                                :buffer-value="parseInt(item.idle)"
+                                :value="parseInt(item.idle)"
+                                stream
+                            ></v-progress-linear>
+                        </v-col>
+                    </v-row>
+                </div>
+            </div>
         </v-container>
     </div>
 </template>
@@ -295,50 +432,53 @@
 export default {
     data() {
         return {
+            cpuSparklines: new Array(),
+            cpus: new Array(),
             gpuStat: "",
             ramUsage: "",
             ramTotal: "",
             ramUsed: "",
             ramPercent: "",
-            loadingInterval: null
+            loadingInterval: null,
+            cpuStat: false
         };
     },
     created() {
         this.loadUtilisation();
     },
-
     methods: {
-        loadUtilisation() {
-            // total used
-            let currentObj = this;
-            axios
+        async loadUtilisation() {
+            await axios
                 .post("gpuStat", {
                     transcoderIp: this.$route.params.ip
                 })
-                .then(function(response) {
+                .then(response => {
+                    if (response.data.cpu) {
+                        this.cpus = response.data.cpu;
+                    }
+
                     if (response.data.gpu) {
                         if (
                             typeof response.data.gpu.fb_memory_usage !==
                             "undefined"
                         ) {
-                            currentObj.gpuStat = response.data;
+                            this.gpuStat = response.data;
                             if (
                                 typeof response.data.gpu.fb_memory_usage !==
                                 "undefined"
                             ) {
-                                currentObj.ramUsage =
+                                this.ramUsage =
                                     response.data.gpu.fb_memory_usage;
-                                currentObj.ramTotal = currentObj.ramUsage.total.replace(
+                                this.ramTotal = this.ramUsage.total.replace(
                                     " MiB",
                                     ""
                                 );
-                                currentObj.ramUsed = currentObj.ramUsage.used.replace(
+                                this.ramUsed = this.ramUsage.used.replace(
                                     " MiB",
                                     ""
                                 );
-                                currentObj.ramPercent =
-                                    (currentObj.ramUsed * 100) /
-                                    currentObj.ramTotal;
+                                this.ramPercent =
+                                    (this.ramUsed * 100) / this.ramTotal;
                             }
                         }
                     }
