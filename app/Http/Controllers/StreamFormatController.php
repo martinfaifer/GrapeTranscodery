@@ -28,7 +28,6 @@ class StreamFormatController extends Controller
                 'code' => $format->code
             );
         }
-
         return [
             'status' => "success",
             'data' => $output
@@ -46,19 +45,13 @@ class StreamFormatController extends Controller
     {
         if (StreamFormat::where('video', $request->videoFormat)->first()) {
             // nesmí existovat shoda
-            return [
-                'status' => "error",
-                'msg' => "Formát je juž založen"
-            ];
+            return NotificationController::notify("error", "error", "Formát je juž založen!");
         }
 
 
         if (StreamFormat::where('code', $request->videoCode)->first()) {
             // nesmí existovat shoda
-            return [
-                'status' => "error",
-                'msg' => "Označení již existuje"
-            ];
+            return NotificationController::notify("error", "error", "Označení již existuje!");
         }
 
         try {
@@ -67,15 +60,9 @@ class StreamFormatController extends Controller
                 'code' => $request->videoCode
             ]);
 
-            return [
-                'status' => "success",
-                'msg' => "Založeno"
-            ];
+            return NotificationController::notify("success", "success", "Založeno!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Nepodařilo se založit"
-            ];
+            return NotificationController::notify();
         }
     }
 
@@ -113,15 +100,9 @@ class StreamFormatController extends Controller
                 'code' => $request->code
             ]);
 
-            return [
-                'status' => "success",
-                'msg' => "Formát byl upraven"
-            ];
+            return NotificationController::notify("success", "success", "Formát byl upraven!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Formát se nepodařilo upravit"
-            ];
+            return NotificationController::notify();
         }
     }
 
@@ -137,15 +118,9 @@ class StreamFormatController extends Controller
         try {
             StreamFormat::where('id', $request->formatId)->delete();
 
-            return [
-                'status' => "success",
-                'msg' => "Formát byl odebrán"
-            ];
+            return NotificationController::notify("success", "success", "Formát odebrán!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Formát se nepodařilo odebrat"
-            ];
+            return NotificationController::notify();
         }
     }
 }

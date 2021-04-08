@@ -1,30 +1,61 @@
 <template>
-    <div>
-        <v-snackbar
-            v-if="status.status"
-            class="text-center"
-            rounded="pill"
-            transition="scale-transition"
-            dense
-            top
-            :timeout="timeout"
-            :color="status.status"
-            v-model="status"
-        >
-            <div class="text-center">
-                <span class="subtitle-1"> {{ status.msg }} </span>
-            </div>
-            <template v-slot:action="{ attrs }">
-                <v-btn color="blue" text v-bind="attrs"> </v-btn>
-            </template>
-        </v-snackbar>
-    </div>
+    <v-main>
+        <transition name="slide-fade" mode="out-in">
+            <v-snackbar
+                v-if="alert != null"
+                :timeout="-1"
+                :value="true"
+                bottom
+                :color="alert.status"
+                right
+                transition="slide-x-transition"
+            >
+                <v-icon v-if="alert.status === 'success'">
+                    mdi-check
+                </v-icon>
+
+                <v-icon v-if="alert.status === 'error'">
+                    mdi-close
+                </v-icon>
+
+                <v-icon
+                    v-if="alert.status === 'warning' || alert.status === 'info'"
+                >
+                    mdi-exclamation
+                </v-icon>
+                <strong>
+                    {{ alert.msg }}
+                </strong>
+            </v-snackbar>
+        </transition>
+    </v-main>
 </template>
+
 <script>
 export default {
-    props: ["status"],
-    data: () => ({
-        timeout: 4000
-    }),
+    computed: {
+        alert() {
+            return this.$store.state.alerts;
+        }
+    },
+    data() {
+        return {};
+    },
+
+    created() {},
+    watch: {
+        alert() {
+            if (this.alert != null) {
+                setTimeout(
+                    function() {
+                        this.$store.state.alerts = null;
+                    }.bind(this),
+                    4000
+                );
+            } else {
+                return;
+            }
+        }
+    }
 };
 </script>

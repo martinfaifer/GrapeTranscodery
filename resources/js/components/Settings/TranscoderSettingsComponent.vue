@@ -1,10 +1,5 @@
 <template>
     <v-main>
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
-
         <v-container class="mt-12" fluid>
             <v-card flat color="transparent">
                 <v-card-title>
@@ -86,7 +81,7 @@
                 max-width="800px"
             >
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Založení transcodéru
                     </v-card-title>
                     <v-card-text>
@@ -135,7 +130,7 @@
                 max-width="800px"
             >
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Editace transcodéru
                     </v-card-title>
                     <v-card-text>
@@ -168,14 +163,9 @@
                 </v-card>
             </v-dialog>
         </v-row>
-
-        <!-- KONEC EDIT DIALOGU -->
-
-        <!-- KONEC DIALOGU -->
     </v-main>
 </template>
 <script>
-import NotificationComponent from "../Notifications/NotificationComponent";
 export default {
     data: () => ({
         transcoderId: null,
@@ -199,10 +189,6 @@ export default {
             { text: "Akce", sortable: false, value: "akce" }
         ]
     }),
-
-    components: {
-        "notification-component": NotificationComponent
-    },
     created() {
         this.loadTranscoders();
     },
@@ -223,63 +209,50 @@ export default {
             this.ip = null;
         },
         saveCreate() {
-            let currentObj = this;
             axios
                 .post("transcoder/create", {
                     name: this.nazev,
                     ip: this.ip
                 })
-                .then(function(response) {
-                    currentObj.closeDialog();
-                    currentObj.loadTranscoders();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.closeDialog();
+                    this.loadTranscoders();
                 });
         },
         openTranscoderEditDialog(trasncoderId) {
-            let currentObj = this;
             axios
                 .post("transcoder/search", {
                     trasncoderId: trasncoderId
                 })
-                .then(function(response) {
-                    currentObj.transcoderEdit = response.data;
-                    currentObj.transcoderId = trasncoderId;
-                    currentObj.editTranscoderDialog = true;
+                .then(response => {
+                    this.transcoderEdit = response.data;
+                    this.transcoderId = trasncoderId;
+                    this.editTranscoderDialog = true;
                 });
         },
 
         saveEdit() {
-            let currentObj = this;
             axios
                 .post("transcoder/edit", {
                     transcoderId: this.transcoderId,
                     name: this.transcoderEdit.name,
                     ip: this.transcoderEdit.ip
                 })
-                .then(function(response) {
-                    currentObj.closeDialog();
-                    currentObj.loadTranscoders();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.closeDialog();
+                    this.loadTranscoders();
                 });
         },
         deleteTranscoder(transcoderId) {
-            let currentObj = this;
             axios
                 .post("transcoder/delete", {
                     transcoderId: transcoderId
                 })
-                .then(function(response) {
-                    currentObj.loadTranscoders();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadTranscoders();
                 });
         }
     },

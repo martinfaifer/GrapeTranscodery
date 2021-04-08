@@ -105,9 +105,8 @@ export default {
     },
     methods: {
         loadStreams() {
-            let currentObj = this;
             window.axios.get("streams").then(response => {
-                currentObj.streams = response.data;
+                this.streams = response.data;
             });
         }
     }

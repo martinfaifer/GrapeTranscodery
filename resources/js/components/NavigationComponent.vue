@@ -1,10 +1,5 @@
 <template>
     <v-main>
-        <!-- notifikace -->
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
         <v-app>
             <v-app-bar color="#586776" fixed dense>
                 <v-app-bar-nav-icon
@@ -38,7 +33,7 @@
                                 link
                                 to="/settings/streams"
                             >
-                                Nastavení App<v-spacer></v-spacer
+                                Nastavení<v-spacer></v-spacer
                                 ><v-icon color="grey" right small
                                     >mdi-settings</v-icon
                                 >
@@ -124,6 +119,18 @@
                                 link
                                 :to="'/transcoder/' + transcoder.ip"
                             >
+                                <v-list-item-icon>
+                                    <v-icon
+                                        v-if="transcoder.status === 'success'"
+                                        color="green"
+                                        >mdi-check</v-icon
+                                    >
+                                    <v-icon
+                                        v-if="transcoder.status === 'offline'"
+                                        color="red"
+                                        >mdi-close</v-icon
+                                    >
+                                </v-list-item-icon>
                                 <v-list-item-title
                                     v-text="transcoder.name"
                                 ></v-list-item-title>
@@ -155,7 +162,7 @@
                             dense
                             border="left"
                             type="error"
-                            class="body-2 mt-2"
+                            class="mt-2 body-2"
                         >
                             <strong>{{ problemticStream.nazev }}</strong>
                         </v-alert>
@@ -174,7 +181,7 @@
         <v-row justify="center">
             <v-dialog v-model="editPasswordDialog" persistent max-width="800px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Změna hesla
                     </v-card-title>
                     <v-card-text>
@@ -205,6 +212,9 @@
                 </v-card>
             </v-dialog>
         </v-row>
+
+        <!-- notifikace -->
+        <notification-component></notification-component>
     </v-main>
 </template>
 
@@ -299,6 +309,7 @@ export default {
                 try {
                     this.loadUser();
                     this.loadProblematicStreams();
+                    this.loadTranscoders();
                 } catch (error) {}
             }.bind(this),
             2000

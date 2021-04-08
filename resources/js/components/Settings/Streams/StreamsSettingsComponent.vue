@@ -1,9 +1,5 @@
 <template>
     <v-main>
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
         <v-container class="mt-12" fluid>
             <v-card flat color="transparent">
                 <v-card-title>
@@ -111,13 +107,13 @@
         <v-row justify="center">
             <v-dialog v-model="createDialog" persistent max-width="1000px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Nový Stream
                     </v-card-title>
                     <v-card-text>
                         <v-container>
-                            <v-row cols="12" sm="4" md="4" class="mt-2">
-                                <v-col>
+                            <v-row class="mt-2">
+                                <v-col sm="4" md="4" lg="4">
                                     <v-autocomplete
                                         v-model="transcoderId"
                                         :items="transcoders"
@@ -127,7 +123,7 @@
                                         label="Výběr transcodéru"
                                     ></v-autocomplete>
                                 </v-col>
-                                <v-col>
+                                <v-col sm="4" md="4" lg="4">
                                     <v-text-field
                                         dense
                                         v-show="transcoderId != null"
@@ -135,7 +131,7 @@
                                         label="Zdrojová adresa streamu"
                                     ></v-text-field>
                                 </v-col>
-                                <v-col>
+                                <v-col sm="4" md="4" lg="4">
                                     <v-btn
                                         v-show="stream_src != null"
                                         color="green darken-1"
@@ -152,14 +148,9 @@
                                     >
                                 </v-col>
                             </v-row>
-
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <!--  -->
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="12" md="12" lg="12">
                                     <v-text-field
                                         dense
                                         v-model="stream_name"
@@ -167,13 +158,9 @@
                                     ></v-text-field>
                                 </v-col>
                             </v-row>
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="12" md="12" lg="12">
                                     <v-text-field
                                         v-if="analyseDataVideo != null"
                                         disabled
@@ -183,8 +170,19 @@
                                         label="Formát videa"
                                     ></v-text-field>
                                 </v-col>
-
-                                <v-col sm="4" md="4">
+                                <!-- test -->
+                                <v-col sm="6" md="6">
+                                    <v-select
+                                        v-model="videoIndex"
+                                        :items="analyseDataVideo"
+                                        item-value="index"
+                                        item-text="popis"
+                                        dense
+                                        label="Výběr videa"
+                                    ></v-select>
+                                </v-col>
+                                <!-- end test -->
+                                <v-col sm="6" md="6">
                                     <v-select
                                         v-model="audioIndex"
                                         :items="analyseDataAudio"
@@ -194,14 +192,26 @@
                                         label="Výběr audia"
                                     ></v-select>
                                 </v-col>
+                                <v-col
+                                    sm="12"
+                                    md="12"
+                                    lg="12"
+                                    v-show="analyseSubtitles.length > 0"
+                                >
+                                    <v-select
+                                        clearable
+                                        v-model="subtitleIndex"
+                                        :items="analyseSubtitles"
+                                        item-value="index"
+                                        item-text="popis"
+                                        dense
+                                        label="Výběr titulků"
+                                    >
+                                    </v-select>
+                                </v-col>
                             </v-row>
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
                                         @change="
                                             loadKvalityByFormatCode(formatCode)
@@ -215,23 +225,19 @@
                                     ></v-select>
                                 </v-col>
                             </v-row>
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
                                         v-model="dst1_kvality"
                                         :items="kvality"
+                                        clearable
                                         item-value="id"
                                         item-text="kvalita"
                                         dense
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -244,15 +250,19 @@
                                 </v-col>
                             </v-row>
 
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                         v-model="dst2_kvality"
+                                        clearable
                                         :items="kvality"
                                         item-value="id"
                                         item-text="kvalita"
@@ -260,7 +270,7 @@
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -269,27 +279,39 @@
                                         dense
                                         v-model="dst2"
                                         label="Dst 2"
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                     ></v-text-field>
                                 </v-col>
                             </v-row>
 
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                         v-model="dst3_kvality"
                                         :items="kvality"
                                         item-value="id"
                                         item-text="kvalita"
                                         dense
+                                        clearable
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -298,6 +320,14 @@
                                         dense
                                         v-model="dst3"
                                         label="Dst 3"
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                     ></v-text-field>
                                 </v-col>
                             </v-row>
@@ -328,7 +358,7 @@
         <v-row justify="center">
             <v-dialog v-model="editStreamDialog" persistent max-width="1000px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="mx-auto text-center headline">
                         Editace Streamu
                     </v-card-title>
                     <v-card-text>
@@ -374,7 +404,7 @@
                                 md="4"
                                 class="mt-2"
                             >
-                                <v-col sm="4" md="4">
+                                <v-col sm="12" md="12" lg="12">
                                     <v-text-field
                                         dense
                                         v-model="streamEdit.nazev"
@@ -388,7 +418,7 @@
                                 md="4"
                                 class="mt-2"
                             >
-                                <v-col sm="4" md="4">
+                                <v-col sm="12" md="12">
                                     <v-text-field
                                         v-if="analyseDataVideo != null"
                                         disabled
@@ -399,24 +429,115 @@
                                     ></v-text-field>
                                 </v-col>
 
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6">
+                                    <v-select
+                                        v-model="videoIndex"
+                                        :items="analyseDataVideo"
+                                        item-value="index"
+                                        item-text="popis"
+                                        dense
+                                        clearable
+                                        label="Výběr videa"
+                                    ></v-select>
+                                </v-col>
+
+                                <v-col sm="6" md="6">
                                     <v-select
                                         v-model="audioIndex"
                                         :items="analyseDataAudio"
                                         item-value="index"
                                         item-text="popis"
                                         dense
+                                        clearable
                                         label="Výběr audia"
                                     ></v-select>
                                 </v-col>
+
+                                <v-col
+                                    sm="12"
+                                    md="12"
+                                    lg="12"
+                                    v-show="analyseSubtitles.length > 0"
+                                >
+                                    <v-select
+                                        clearable
+                                        v-model="subtitleIndex"
+                                        :items="analyseSubtitles"
+                                        item-value="index"
+                                        item-text="popis"
+                                        dense
+                                        label="Výběr titulků"
+                                    >
+                                    </v-select>
+                                </v-col>
+                                <!-- <v-col
+                                    sm="12"
+                                    md="12"
+                                    lg="12"
+                                    v-show="subtitleIndex != null"
+                                >
+                                    <v-card color="blue-grey lighten-5" flat>
+                                        <v-card-subtitle justify-center>
+                                            Umístění titulků v obraze
+                                        </v-card-subtitle>
+                                        <v-radio-group row>
+                                            <v-col sm="6" md="6" lg="6">
+                                                <v-radio
+                                                    color="info"
+                                                    value="top_left"
+                                                ></v-radio>
+                                            </v-col>
+                                            <v-col sm="5" md="5" lg="5">
+                                                <v-radio
+                                                    color="info"
+                                                    value="top_center"
+                                                ></v-radio>
+                                            </v-col>
+                                            <v-col sm="1" md="1" lg="1">
+                                                <v-radio
+                                                    color="info"
+                                                    value="top_right"
+                                                ></v-radio>
+                                            </v-col>
+                                            <v-col
+                                                sm="6"
+                                                md="6"
+                                                lg="6"
+                                                class="mt-6"
+                                            >
+                                                <v-radio
+                                                    color="info"
+                                                    value="bottom_left"
+                                                ></v-radio>
+                                            </v-col>
+                                            <v-col
+                                                sm="5"
+                                                md="5"
+                                                lg="5"
+                                                class="mt-5"
+                                            >
+                                                <v-radio
+                                                    color="info"
+                                                    value="bottom_center"
+                                                ></v-radio>
+                                            </v-col>
+                                            <v-col
+                                                sm="1"
+                                                md="1"
+                                                lg="1"
+                                                class="mt-6"
+                                            >
+                                                <v-radio
+                                                    color="info"
+                                                    value="bottom_right"
+                                                ></v-radio>
+                                            </v-col>
+                                        </v-radio-group>
+                                    </v-card>
+                                </v-col> -->
                             </v-row>
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
                                         @change="
                                             loadKvalityByFormatCode(formatCode)
@@ -426,27 +547,24 @@
                                         item-value="code"
                                         item-text="video"
                                         dense
+                                        clearable
                                         label="Výběr výstupního video formátu"
                                     ></v-select>
                                 </v-col>
                             </v-row>
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
                                         v-model="dst1_kvality"
                                         :items="kvality"
                                         item-value="id"
                                         item-text="kvalita"
                                         dense
+                                        clearable
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -459,23 +577,27 @@
                                 </v-col>
                             </v-row>
 
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                         v-model="dst2_kvality"
                                         :items="kvality"
                                         item-value="id"
                                         item-text="kvalita"
                                         dense
+                                        clearable
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -484,27 +606,39 @@
                                         dense
                                         v-model="streamEdit.dst2"
                                         label="Dst 2"
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                     ></v-text-field>
                                 </v-col>
                             </v-row>
 
-                            <v-row
-                                v-if="analyseDataVideo != null"
-                                sm="4"
-                                md="4"
-                                class="mt-2"
-                            >
-                                <v-col sm="4" md="4">
+                            <v-row v-if="analyseDataVideo != null" class="mt-2">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-select
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                         v-model="dst3_kvality"
                                         :items="kvality"
                                         item-value="id"
                                         item-text="kvalita"
                                         dense
+                                        clearable
                                         label="Výběr rozlišení"
                                     ></v-select>
                                 </v-col>
-                                <v-col sm="4" md="4">
+                                <v-col sm="6" md="6" lg="6">
                                     <v-text-field
                                         v-if="
                                             analyseDataVideo != null &&
@@ -513,6 +647,14 @@
                                         dense
                                         v-model="streamEdit.dst3"
                                         label="Dst 3"
+                                        :disabled="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
+                                        :readonly="
+                                            subtitleIndex != null &&
+                                                subtitleIndex !== ''
+                                        "
                                     ></v-text-field>
                                 </v-col>
                             </v-row>
@@ -529,7 +671,7 @@
                             text
                             @click="editStream()"
                         >
-                            Založit
+                            Upravit
                         </v-btn>
                     </v-card-actions>
                 </v-card>
@@ -543,7 +685,7 @@
         <v-row justify="center">
             <v-dialog v-model="editScriptDialog" persistent max-width="1000px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Editace scriptu
                     </v-card-title>
                     <v-card-text>
@@ -580,7 +722,6 @@
     </v-main>
 </template>
 <script>
-import NotificationComponent from "../../Notifications/NotificationComponent";
 export default {
     data: () => ({
         streamEditScript: null,
@@ -606,7 +747,11 @@ export default {
         formats: [],
         kvality: [],
         loadingAnalyze: false,
+
         analyseDataAudio: [],
+        analyseSubtitles: [],
+        subtitleIndex: null,
+        subtitlePosition: null,
         analyseDataVideo: null,
         stream_src: null,
         transcoderId: null,
@@ -635,84 +780,68 @@ export default {
             { text: "Akce", sortable: false, value: "akce" }
         ]
     }),
-
-    components: {
-        "notification-component": NotificationComponent
-    },
     created() {
         this.loadStreams();
     },
     methods: {
         deleteStream(streamId) {
-            let currentObj = this;
             axios
                 .post("stream/delete", {
                     streamId: streamId
                 })
                 .then(response => {
-                    currentObj.loadStreams();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                    this.loadStreams();
+                    this.$store.state.alerts = response.data.alert;
                 });
         },
 
         openEditStreamDialog(streamId) {
             // načtení informací o streamu z db
-            let currentObj = this;
             axios
                 .post("stream/info", {
                     streamId: streamId
                 })
                 .then(response => {
-                    currentObj.getTranscoders();
-                    currentObj.streamEdit = response.data;
-                    currentObj.streamId = response.data.id;
-                    currentObj.editStreamDialog = true;
+                    this.getTranscoders();
+                    this.streamEdit = response.data;
+                    this.streamId = response.data.id;
+                    this.editStreamDialog = true;
                 });
         },
 
         openEditScriptEdialog(streamId) {
-            let currentObj = this;
             axios
                 .post("stream/script", {
                     streamId: streamId
                 })
                 .then(response => {
-                    currentObj.streamEditScript = response.data;
-                    currentObj.streamId = streamId;
-                    currentObj.editScriptDialog = true;
+                    this.streamEditScript = response.data;
+                    this.streamId = streamId;
+                    this.editScriptDialog = true;
                 });
         },
         editStreamScript() {
-            let currentObj = this;
             axios
                 .post("stream/script/edit", {
                     streamId: this.streamId,
                     script: this.streamEditScript
                 })
                 .then(response => {
-                    currentObj.resetDialog();
-                    currentObj.loadStreams();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                    this.$store.state.alerts = response.data.alert;
+                    this.resetDialog();
+                    this.loadStreams();
                 });
         },
 
         loadStreams() {
-            let currentObj = this;
             window.axios.get("streams").then(response => {
-                currentObj.streams = response.data;
+                this.streams = response.data;
             });
         },
 
         openCreateStreamDialog() {
             // nactení transcodérů transcoders
             this.getTranscoders();
-
             this.createDialog = true;
         },
         // nactení transcodérů
@@ -722,23 +851,21 @@ export default {
             });
         },
         loadKvalityByFormatCode(formatCode) {
-            let currentObj = this;
             axios
                 .post("kvality/search", {
                     formatCode: formatCode
                 })
                 .then(response => {
-                    currentObj.kvality = response.data;
+                    this.kvality = response.data;
                 });
         },
 
         loadFormats() {
-            let currentObj = this;
             window.axios.get("formats").then(response => {
                 if (response.data.status == "success") {
-                    currentObj.formats = response.data.data;
+                    this.formats = response.data.data;
                 } else {
-                    currentObj.formats = null;
+                    this.formats = null;
                 }
             });
         },
@@ -746,35 +873,45 @@ export default {
         // Analýza streamu na daném transcodéru
         analyse_stream(transcoderId, stream_src) {
             this.loadingAnalyze = true;
-            let currentObj = this;
             axios
                 .post("stream/analyze", {
                     transcoderId: transcoderId,
                     stream_src: stream_src,
                     cmd: "PROBE"
                 })
-                .then(function(response) {
-                    console.log(response.data);
-                    currentObj.loadingAnalyze = false;
+                .then(response => {
+                    this.loadingAnalyze = false;
+                    this.loadingCreate = false;
+                    this.$store.state.alerts = response.data.alert;
                     if (response.data.status === "success") {
-                        currentObj.analyseDataVideo = response.data.video;
-                        currentObj.videoIndex = response.data.video[0].index;
-                        currentObj.inputCodec =
-                            response.data.video[0].input_codec;
-                        currentObj.analyseDataAudio = response.data.audio;
-                        currentObj.loadFormats();
+                        this.analyseDataVideo = response.data.video;
+                        this.videoIndex = response.data.video[0].index;
+                        this.inputCodec = response.data.video[0].input_codec;
+                        this.analyseDataAudio = response.data.audio;
+                        this.analyseSubtitles = response.data.subtitles;
+                        this.loadFormats();
+                        this.dst3 = null;
+                        this.dst3_kvality = null;
+                        this.dst2 = null;
+                        this.dst2_kvality = null;
+                        this.dst1_kvality = null;
+                        this.dst1 = null;
+                        this.formatCode = null;
+                        this.audioIndex = null;
+                        this.stream_name = null;
                     } else {
-                        currentObj.status = response.data.status;
-                        setTimeout(function() {
-                            currentObj.status = null;
-                        }, 2000);
+                        this.analyseDataVideo = null;
+                        this.videoIndex = null;
+                        this.inputCodec = null;
+                        this.analyseDataAudio = null;
+                        this.analyseSubtitles = null;
+                        this.formats = null;
                     }
                 });
         },
 
         createStream() {
             this.loadingCreate = true;
-            let currentObj = this;
             axios
                 .post("stream/create", {
                     transcoderId: this.transcoderId,
@@ -789,23 +926,22 @@ export default {
                     dst1: this.dst1,
                     formatCode: this.formatCode,
                     audioIndex: this.audioIndex,
-                    stream_name: this.stream_name
+                    stream_name: this.stream_name,
+                    subtitleIndex: this.subtitleIndex
                 })
-                .then(function(response) {
-                    currentObj.loadingCreate = false;
-                    currentObj.resetDialog();
-                    currentObj.loadStreams();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadingCreate = false;
+                    if (response.data.alert.status === "success") {
+                        this.resetDialog();
+                        this.loadStreams();
+                    }
                 });
         },
 
         // editace streamu
         editStream() {
             this.loadingEdit = true;
-            let currentObj = this;
             axios
                 .post("stream/edit", {
                     streamId: this.streamId,
@@ -821,25 +957,30 @@ export default {
                     dst1: this.streamEdit.dst,
                     formatCode: this.formatCode,
                     audioIndex: this.audioIndex,
-                    stream_name: this.streamEdit.nazev
+                    stream_name: this.streamEdit.nazev,
+                    subtitleIndex: this.subtitleIndex
                 })
-                .then(function(response) {
-                    currentObj.loadingEdit = false;
-                    currentObj.resetDialog();
-                    currentObj.loadStreams();
-
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadingEdit = false;
+                    if (response.data.status === "success") {
+                        this.resetDialog();
+                        this.loadStreams();
+                    }
                 });
         },
         dialogClose() {
             this.editScriptDialog = false;
             this.createDialog = false;
             this.editStreamDialog = false;
+            this.resetDialog();
         },
         resetDialog() {
+            this.analyseDataVideo = null;
+            this.inputCodec = null;
+            this.analyseDataAudio = null;
+            this.analyseSubtitles = null;
+            this.formats = null;
             this.streamEditScript = null;
             this.editScriptDialog = false;
             this.createDialog = false;
@@ -857,6 +998,9 @@ export default {
             this.audioIndex = null;
             this.videoInputFormat = null;
             this.stream_name = null;
+            this.transcoderId = null;
+            this.stream_src = null;
+            this.subtitleIndex = null;
         }
     },
     watch: {}

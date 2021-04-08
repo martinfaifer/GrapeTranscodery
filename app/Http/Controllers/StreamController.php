@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Stream;
 use App\Models\StreamFormat;
 use App\Models\StreamKvality;
+use App\Models\StreamLog;
 use App\Models\transcoder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -138,16 +139,79 @@ class StreamController extends Controller
         $dst3 = "";
         // validace vstupů
 
-        StreamValidationController::validate_stream_inputs($request);
+        $validation = StreamValidationController::validate_stream_inputs($request);
+        if ($validation['status'] != 'success') {
+            return $validation;
+        }
 
         // transcoder
         $transcoder = transcoder::where('id', $request->transcoderId)->first();
         $transcoderNameEploded = explode("_", $transcoder->name);
         // vsechny inputy jsou v pořádku, začíná se vytvářet script pro spustení kanálu pro ffmpeg, který se následně zašle do transcoderu
 
-        if ($request->dst1) {
+        // overení, že stream nemá k sobe prirazeny zádné titulky
+        if (empty($request->subtitleIndex) || is_null($request->subtitleIndex)) {
+            if ($request->dst1) {
+                $kvalitaForBitrateDst1 = StreamKvality::where('id', $request->dst1_kvality)->first();
+                $dst1 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                    $request->formatCode,
+                    $kvalitaForBitrateDst1->bitrate,
+                    $kvalitaForBitrateDst1->minrate,
+                    $kvalitaForBitrateDst1->maxrate,
+                    "fast",
+                    trim($request->dst1),
+                    $kvalitaForBitrateDst1->scale,
+                    false,
+                    "GRAPE_" . $transcoderNameEploded[1],
+                    $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
+                );
+            }
+
+            if ($request->dst2) {
+                $kvalitaForBitrateDst2 = StreamKvality::where('id', $request->dst2_kvality)->first();
+                $dst2 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                    $request->formatCode,
+                    $kvalitaForBitrateDst2->bitrate,
+                    $kvalitaForBitrateDst2->minrate,
+                    $kvalitaForBitrateDst2->maxrate,
+                    "fast",
+                    trim($request->dst2),
+                    $kvalitaForBitrateDst2->scale,
+                    false,
+                    "GRAPE_" . $transcoderNameEploded[1],
+                    $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
+                );
+            }
+
+            if ($request->dst3) {
+                $kvalitaForBitrateDst3 = StreamKvality::where('id', $request->dst3_kvality)->first();
+                $dst3 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                    $request->formatCode,
+                    $kvalitaForBitrateDst3->bitrate,
+                    $kvalitaForBitrateDst3->minrate,
+                    $kvalitaForBitrateDst3->maxrate,
+                    "fast",
+                    trim($request->dst3),
+                    $kvalitaForBitrateDst3->scale,
+                    false,
+                    "GRAPE_" . $transcoderNameEploded[1],
+                    $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
+                );
+            }
+        }
+
+
+        // mapování pidů
+        $videoPids = " -map 0:" . $request->videoIndex;
+        $audioPids =  " -map 0:" . $request->audioIndex;
+
+        // stream má na sobě vázané titulky , oddělení od vnitřní logiky pro standartní vytvoření scriptu pro spustení streamu
+        if (!empty($request->subtitleIndex) || !is_null($request->subtitleIndex)) {
             $kvalitaForBitrateDst1 = StreamKvality::where('id', $request->dst1_kvality)->first();
-            $dst1 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+            $script_with_subtitles = FFmpegScriptController::stream_with_subtitles(
+                trim($request->stream_src),
+                $request->videoIndex,
+                $request->subtitleIndex,
                 $request->formatCode,
                 $kvalitaForBitrateDst1->bitrate,
                 $kvalitaForBitrateDst1->minrate,
@@ -157,45 +221,13 @@ class StreamController extends Controller
                 $kvalitaForBitrateDst1->scale,
                 false,
                 "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
-            );
-        }
+                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale,
+                $videoPids,
+                $audioPids
 
-        if ($request->dst2) {
-            $kvalitaForBitrateDst2 = StreamKvality::where('id', $request->dst2_kvality)->first();
-            $dst2 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
-                $request->formatCode,
-                $kvalitaForBitrateDst2->bitrate,
-                $kvalitaForBitrateDst2->minrate,
-                $kvalitaForBitrateDst2->maxrate,
-                "fast",
-                trim($request->dst2),
-                $kvalitaForBitrateDst2->scale,
-                false,
-                "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
             );
+            return $this->create($request, $script_with_subtitles, $kvalitaForBitrateDst1);
         }
-
-        if ($request->dst3) {
-            $kvalitaForBitrateDst3 = StreamKvality::where('id', $request->dst3_kvality)->first();
-            $dst3 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
-                $request->formatCode,
-                $kvalitaForBitrateDst3->bitrate,
-                $kvalitaForBitrateDst3->minrate,
-                $kvalitaForBitrateDst3->maxrate,
-                "fast",
-                trim($request->dst3),
-                $kvalitaForBitrateDst3->scale,
-                false,
-                "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
-            );
-        }
-
-        // mapování pidů
-        $videoPids = " -map 0:" . $request->videoIndex;
-        $audioPids =  " -map 0:" . $request->audioIndex;
 
         // finální podoba scriptu
         $script = FFmpegScriptController::ffmpeg_create_script(
@@ -208,6 +240,21 @@ class StreamController extends Controller
             $dst3
         );
         // Založení streamu
+        return $this->create($request, $script, $kvalitaForBitrateDst1, $kvalitaForBitrateDst2 ?? null, $kvalitaForBitrateDst3 ?? null);
+    }
+
+    /**
+     * založení streamu do databaze
+     *
+     * @param Request $request
+     * @param string $script
+     * @param [type] $kvalitaForBitrateDst1
+     * @param [type] $kvalitaForBitrateDst2
+     * @param [type] $kvalitaForBitrateDst3
+     * @return array
+     */
+    public function create(Request $request, string $script, $kvalitaForBitrateDst1, $kvalitaForBitrateDst2 = null, $kvalitaForBitrateDst3 = null): array
+    {
         Stream::create([
             'nazev' => $request->stream_name,
             'src' => trim($request->stream_src),
@@ -223,10 +270,7 @@ class StreamController extends Controller
             'status' => "STOP"
         ]);
 
-        return [
-            'status' => "success",
-            'msg' => "Založen nový stream"
-        ];
+        return NotificationController::notify("success", "success", "Založen nový stream");
     }
 
 
@@ -250,7 +294,8 @@ class StreamController extends Controller
                 'dst2_resolution' => $stream->dst2_resolution,
                 'dst3' => $stream->dst3,
                 'dst3_resolution' => $stream->dst3_resolution,
-                'transcoder' => $stream->transcoder
+                'transcoder' => $stream->transcoder,
+                'format' => $stream->format
             ];
         }
         return [];
@@ -280,13 +325,8 @@ class StreamController extends Controller
                 'status' => "STOP"
             ]);
 
-            return [
-                'status' => "success",
-                'msg' => "Stream byl upraven"
-            ];
+            return NotificationController::notify("success", "success", "Stream byl upraven");
         }
-
-        // StreamValidationController::validate_stream_inputs($request);
 
         // transcoder
         $transcoder = transcoder::where('id', $request->transcoderId)->first();
@@ -294,9 +334,72 @@ class StreamController extends Controller
 
         // vsechny inputy jsou v pořádku, začíná se vytvářet script pro spustení kanálu pro ffmpeg, který se následně zašle do transcoderu
 
-        if ($request->dst1) {
+        try {
+            // overení, že stream nemá k sobe prirazeny zádné titulky
+            if (empty($request->subtitleIndex) || is_null($request->subtitleIndex)) {
+                if ($request->dst1) {
+                    $kvalitaForBitrateDst1 = StreamKvality::where('id', $request->dst1_kvality)->first();
+                    $dst1 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                        $request->formatCode,
+                        $kvalitaForBitrateDst1->bitrate,
+                        $kvalitaForBitrateDst1->minrate,
+                        $kvalitaForBitrateDst1->maxrate,
+                        "fast",
+                        trim($request->dst1),
+                        $kvalitaForBitrateDst1->scale,
+                        false,
+                        "GRAPE_" . $transcoderNameEploded[1],
+                        $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
+                    );
+                }
+
+                if ($request->dst2) {
+                    $kvalitaForBitrateDst2 = StreamKvality::where('id', $request->dst2_kvality)->first();
+                    $dst2 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                        $request->formatCode,
+                        $kvalitaForBitrateDst2->bitrate,
+                        $kvalitaForBitrateDst2->minrate,
+                        $kvalitaForBitrateDst2->maxrate,
+                        "fast",
+                        trim($request->dst2),
+                        $kvalitaForBitrateDst2->scale,
+                        false,
+                        "GRAPE_" . $transcoderNameEploded[1],
+                        $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
+                    );
+                }
+
+                if ($request->dst3) {
+                    $kvalitaForBitrateDst3 = StreamKvality::where('id', $request->dst3_kvality)->first();
+                    $dst3 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+                        $request->formatCode,
+                        $kvalitaForBitrateDst3->bitrate,
+                        $kvalitaForBitrateDst3->minrate,
+                        $kvalitaForBitrateDst3->maxrate,
+                        "fast",
+                        trim($request->dst3),
+                        $kvalitaForBitrateDst3->scale,
+                        false,
+                        "GRAPE_" . $transcoderNameEploded[1],
+                        $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
+                    );
+                }
+            }
+        } catch (\Throwable $th) {
+            return NotificationController::notify("error", "error", "Nejspíše chybí rozlišení!");
+        }
+
+        // mapování pidů
+        $videoPids = " -map 0:" . $request->videoIndex;
+        $audioPids =  " -map 0:" . $request->audioIndex;
+
+        // stream má na sobě vázané titulky , oddělení od vnitřní logiky pro standartní vytvoření scriptu pro spustení streamu
+        if (!empty($request->subtitleIndex) || !is_null($request->subtitleIndex)) {
             $kvalitaForBitrateDst1 = StreamKvality::where('id', $request->dst1_kvality)->first();
-            $dst1 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
+            $script_with_subtitles = FFmpegScriptController::stream_with_subtitles(
+                trim($request->stream_src),
+                $request->videoIndex,
+                $request->subtitleIndex,
                 $request->formatCode,
                 $kvalitaForBitrateDst1->bitrate,
                 $kvalitaForBitrateDst1->minrate,
@@ -306,45 +409,13 @@ class StreamController extends Controller
                 $kvalitaForBitrateDst1->scale,
                 false,
                 "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale
-            );
-        }
+                $request->stream_name . "_" . $kvalitaForBitrateDst1->scale,
+                $videoPids,
+                $audioPids
 
-        if ($request->dst2) {
-            $kvalitaForBitrateDst2 = StreamKvality::where('id', $request->dst2_kvality)->first();
-            $dst2 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
-                $request->formatCode,
-                $kvalitaForBitrateDst2->bitrate,
-                $kvalitaForBitrateDst2->minrate,
-                $kvalitaForBitrateDst2->maxrate,
-                "fast",
-                trim($request->dst2),
-                $kvalitaForBitrateDst2->scale,
-                false,
-                "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst2->scale
             );
+            return self::update($request, $script_with_subtitles, $kvalitaForBitrateDst1,  $kvalitaForBitrateDst2 ?? null,  $kvalitaForBitrateDst3 ?? null);
         }
-
-        if ($request->dst3) {
-            $kvalitaForBitrateDst3 = StreamKvality::where('id', $request->dst3_kvality)->first();
-            $dst3 = " " . FFmpegScriptController::ffmpeg_script_dst_output_part(
-                $request->formatCode,
-                $kvalitaForBitrateDst3->bitrate,
-                $kvalitaForBitrateDst3->minrate,
-                $kvalitaForBitrateDst3->maxrate,
-                "fast",
-                trim($request->dst3),
-                $kvalitaForBitrateDst3->scale,
-                false,
-                "GRAPE_" . $transcoderNameEploded[1],
-                $request->stream_name . "_" . $kvalitaForBitrateDst3->scale
-            );
-        }
-
-        // mapování pidů
-        $videoPids = " -map 0:" . $request->videoIndex;
-        $audioPids =  " -map 0:" . $request->audioIndex;
 
         // finální podoba scriptu
         $script = FFmpegScriptController::ffmpeg_create_script(
@@ -357,6 +428,22 @@ class StreamController extends Controller
             $dst3
         );
         // Editace streamu
+        return self::update($request, $script, $kvalitaForBitrateDst1, $kvalitaForBitrateDst2 ?? null, $kvalitaForBitrateDst3 ?? null);
+    }
+
+
+    /**
+     * update streamu
+     *
+     * @param Request $request
+     * @param string $script
+     * @param [type] $kvalitaForBitrateDst1
+     * @param [type] $kvalitaForBitrateDst2
+     * @param [type] $kvalitaForBitrateDst3
+     * @return array
+     */
+    public static function update(Request $request,  string $script, $kvalitaForBitrateDst1, $kvalitaForBitrateDst2 = null, $kvalitaForBitrateDst3 = null): array
+    {
         Stream::where('id', $request->streamId)->update([
             'nazev' => $request->stream_name,
             'src' => trim($request->stream_src),
@@ -372,10 +459,7 @@ class StreamController extends Controller
             'status' => "STOP"
         ]);
 
-        return [
-            'status' => "success",
-            'msg' => "Stream byl upraven"
-        ];
+        return NotificationController::notify("success", "success", "Upraveno!");
     }
 
     /**
@@ -403,17 +487,14 @@ class StreamController extends Controller
                 'script' => $request->script
             ]);
 
+            return NotificationController::notify("success", "success", "Script byl upraven");
             return [
                 'status' => "success",
                 'msg' => "Script byl upraven"
             ];
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Script se nepodařilo upravit"
-            ];
+            return NotificationController::notify("error", "error", "Script se nepodařilo upravit");
         }
-        return [];
     }
 
 
@@ -426,26 +507,24 @@ class StreamController extends Controller
     public function stream_delete(Request $request): array
     {
         if (!Stream::where('id', $request->streamId)->first()) {
-            return [
-                'status' => "error",
-                'msg' => "Stream se nepodařilo vyhledat"
-            ];
+            return NotificationController::notify("error", "error", "Stream se nepodařilo vyhledat!");
         }
 
         $stream =  Stream::where('id', $request->streamId)->first();
 
         if ($stream->status == "active") {
-            return [
-                'status' => "error",
-                'msg' => "Stream se transcoduje"
-            ];
+            return NotificationController::notify("error", "error", "Stream se transcoduje!");
+        }
+
+
+        if (StreamLog::where('stream_id', $request->streamId)->first()) {
+            StreamLog::where('stream_id', $request->streamId)->each(function ($streamLog) {
+                $streamLog->delete();
+            });
         }
 
         $stream->delete();
-        return [
-            'status' => "success",
-            'msg' => "Stream byl úspěšně odebrán"
-        ];
+        return NotificationController::notify("success", "success", "Stream odebrán!");
     }
 
 
@@ -456,15 +535,14 @@ class StreamController extends Controller
      */
     public static function try_start_stream_with_issue(): void
     {
-
         if (Stream::where('status', "issue")->first()) {
 
-            foreach (Stream::where('status', "issue")->get() as $stream) {
+            Stream::where('status', "issue")->each(function ($stream) {
                 TranscoderController::start_stream_from_backend(
                     transcoder::where('id', $stream->transcoder)->first()->ip,
                     $stream->id
                 );
-            }
+            });
         }
     }
 

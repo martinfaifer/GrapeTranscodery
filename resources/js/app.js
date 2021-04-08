@@ -7,11 +7,15 @@ import VueApexCharts from 'vue-apexcharts'
 import Chart from "chart.js";
 import Vuetify from "vuetify";
 import VueRouter from "vue-router";
+import { store } from "./store/store";
 
 Vue.use(Vuetify);
 Vue.use(VueRouter);
 Vue.use(Chartkick.use(Chart));
 Vue.use(VueApexCharts)
+
+// vypnutí hlášení do console v prohlížeči
+// Vue.config.silent = true; 
 
 Vue.component('apexchart', VueApexCharts)
 
@@ -96,6 +100,7 @@ const opts = {};
 const app = new Vue({
     el: "#app",
     router,
+    store,
     vuetify: new Vuetify({
 
     })

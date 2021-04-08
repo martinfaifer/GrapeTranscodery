@@ -3,16 +3,13 @@
 use App\Http\Controllers\StreamController;
 use App\Http\Controllers\StreamFormatController;
 use App\Http\Controllers\StreamKvalityController;
+use App\Http\Controllers\StreamLogController;
 use App\Http\Controllers\TranscoderController;
 use App\Http\Controllers\UserController;
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::view('/', 'welcome');
 
 // Auth -> prihlasení užiavatele
 Route::post('login', [UserController::class, 'login']);
@@ -62,7 +59,8 @@ Route::post('transcoder/search', [TranscoderController::class, 'search_transcode
 Route::post('transcoder/edit', [TranscoderController::class, 'edit_transcoder'])->middleware('access');
 // transcoder -> delete
 Route::post('transcoder/delete', [TranscoderController::class, 'delete_transcoder'])->middleware('access');
-
+// zobrazení statusu transcodéru
+Route::post('transcoder/status', [TranscoderController::class, 'transcoder_status']);
 
 
 /**
@@ -124,22 +122,14 @@ Route::post('stream/script/edit', [StreamController::class, 'stream_script_edit'
 Route::post('stream/delete', [StreamController::class, 'stream_delete'])->middleware('access');
 
 
-// test¨
+// stream->log
+Route::get('streams/restart/log', [StreamLogController::class, 'show_last_twentyfour_hours_log'])->middleware('access');
+Route::get('streams/log', [StreamLogController::class, 'index'])->middleware('access');
+
+
 Route::get('test', function () {
-    $response = Http::get('http://172.17.3.82/tcontrol.php', [
-        'CMD' => "PROBE",
-        'LOCK' => "FALSE",
-        'SRC' => "udp://239.250.5.136:1234"
-    ]);
 
-    $response = json_decode($response, true);
-    // return $response;
-    if ($response["STATUS"] === "TRUE") {
-
-
-        // status success => vyhledání streamů
-
-        return TranscoderController::create_ffprobe_output_for_frontend($response);
-    } else {
+    if (Http::timeout(3)->get('http://10.239.252.194/tcontrol.php?CMD=NVSTATS')->headers()['Content-Length'][0] === "0") {
+        dd("server error");
     }
 });

@@ -19,27 +19,35 @@ class StreamMonitorController extends Controller
         // soupis streamů co aktuálně jsou transcodovany na danem transcoderu
 
         // napojeni na transcoder , parametry CMD = CHECKSTREAM a SRC streamUrl
-        $transcoder = self::get_transcoder_and_return_ip_and_id();
-        if ($transcoder['status'] === "error") {
+        $transcoders = self::get_transcoder_and_return_ip_and_id();
+        if (empty($transcoders)) {
             exit();
         }
 
-        $streamsOnTranscoder = self::show_streams_belongsTo_this($transcoder['id']);
+        foreach ($transcoders as $transcoder) {
+            $streamsOnTranscoder = self::show_streams_belongsTo_this($transcoder['id']);
 
-        if (!empty($streamsOnTranscoder)) {
+            if (!empty($streamsOnTranscoder)) {
 
-            foreach ($streamsOnTranscoder as $stream) {
+                foreach ($streamsOnTranscoder as $stream) {
 
-                $ffprobeOutput = self::connect($transcoder['ip'], $stream['url']);
+                    echo $stream['nazev'] . PHP_EOL;
 
-                if (!$ffprobeOutput === "error") {
+                    $ffprobeOutput = self::connect($transcoder['ip'], $stream['url']);
 
-                    // ffprobe výstup
-                    $analyzeResult = self::analyze(json_decode($ffprobeOutput, true));
-                    if ($analyzeResult['status'] === 'restart') {
+                    if (!$ffprobeOutput === "error") {
 
-                        // případný restart streamu   
-                        self::reboot($stream['pid'], $stream['id'], $transcoder['id']);
+                        // ffprobe výstup
+                        $analyzeResult = self::analyze(json_decode($ffprobeOutput, true));
+                        if ($analyzeResult['status'] === 'restart') {
+
+                            echo $stream['nazev'] . " -> out of sync" . PHP_EOL;
+
+                            StreamLogController::store($stream->id, "out_of_sync", $ffprobeOutput);
+
+                            // případný restart streamu
+                            // self::reboot($stream['pid'], $stream['id'], $transcoder['id']);
+                        }
                     }
                 }
             }
@@ -54,19 +62,24 @@ class StreamMonitorController extends Controller
      */
     public static function get_transcoder_and_return_ip_and_id(): array
     {
+
+        $transcoders = array();
+
         if (!transcoder::first()) {
             return ['status' => "error"];
         }
 
         foreach (transcoder::all() as $transcoder) {
             if ($transcoder->status === 'success') {
-                return [
+                $transcoders[] = [
                     'status' => "success",
                     'id' => $transcoder->id,
                     'ip' => $transcoder->ip
                 ];
             }
         }
+
+        return $transcoders;
     }
 
 
@@ -85,6 +98,7 @@ class StreamMonitorController extends Controller
         foreach (Stream::where('transcoder', $transcoderId)->get() as $stream) {
             $streams[] = array(
                 'id' => $stream->id,
+                'nazev' => $stream->nazev,
                 'pid' => $stream->pid,
                 'url' => $stream->dst
             );
@@ -109,7 +123,7 @@ class StreamMonitorController extends Controller
             ]);
 
             $response = json_decode($response, true);
-            if ($response["STATUS"] === "TRUE") {
+            if ($response["STATUS"] === "FALSE") {
                 return $response['StreamCheck'];
             }
             return "error";

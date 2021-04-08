@@ -68,7 +68,7 @@
                     v-bind:key="encoder.id"
                     v-show="encoder.encoder_util"
                 >
-                    <div v-if="encoder.encoder_util <= '75 %' ">
+                    <div v-if="convert_string_to_int_and_remove_percent(encoder.encoder_util) <= 75 ">
                         <v-progress-circular
                             class="mt-2 "
                             :size="150"
@@ -84,8 +84,8 @@
                     </div>
                     <div
                         v-if="
-                            encoder.encoder_util > '75 %' &&
-                                encoder.encoder_util < '88 %'
+                            convert_string_to_int_and_remove_percent(encoder.encoder_util) > 75 &&
+                                convert_string_to_int_and_remove_percent(encoder.encoder_util) < 88
                         "
                     >
                         <v-progress-circular
@@ -100,7 +100,7 @@
                             </strong></v-progress-circular
                         >
                     </div>
-                    <div v-if="encoder.encoder_util >= '88 %'">
+                    <div v-if="convert_string_to_int_and_remove_percent(encoder.encoder_util) >= 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -121,7 +121,7 @@
                     v-bind:key="decoder.id"
                     v-show="decoder.decoder_util"
                 >
-                    <div v-if="decoder.decoder_util <= '75 %' ">
+                    <div v-if="convert_string_to_int_and_remove_percent(decoder.decoder_util) <= 75 ">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -137,8 +137,8 @@
                     </div>
                     <div
                         v-if="
-                            decoder.decoder_util > '75 %' &&
-                                decoder.decoder_util < '88 %'
+                            convert_string_to_int_and_remove_percent(decoder.decoder_util) > 75 &&
+                                convert_string_to_int_and_remove_percent(decoder.decoder_util) < 88
                         "
                     >
                         <v-progress-circular
@@ -154,7 +154,7 @@
                             </strong></v-progress-circular
                         >
                     </div>
-                    <div v-if="decoder.decoder_util >= '88 %'">
+                    <div v-if="convert_string_to_int_and_remove_percent(decoder.decoder_util) >= 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -177,7 +177,7 @@
                     v-bind:key="gpu.id"
                     v-show="gpu.gpu_util"
                 >
-                    <div v-if="gpu.gpu_util <= '75 %' ">
+                    <div v-if="convert_string_to_int_and_remove_percent(gpu.gpu_util) <= 75 ">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -188,7 +188,7 @@
                             <strong> GPU {{ gpu.gpu_util }} </strong>
                         </v-progress-circular>
                     </div>
-                    <div v-if="gpu.gpu_util > '75 %' && gpu.gpu_util < '88 %'">
+                    <div v-if="convert_string_to_int_and_remove_percent(gpu.gpu_util) > 75 && convert_string_to_int_and_remove_percent(gpu.gpu_util) < 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -201,7 +201,7 @@
                             </strong></v-progress-circular
                         >
                     </div>
-                    <div v-if="gpu.gpu_util >= '88 %'">
+                    <div v-if="convert_string_to_int_and_remove_percent(gpu.gpu_util) >= 88">
                         <v-progress-circular
                             class="mt-2"
                             :size="150"
@@ -297,7 +297,7 @@
                 Skrýt využití CPU
             </v-btn>
 
-            <div class="justify-center body-2 mt-3 ml-3 mt-3" v-show="cpuStat">
+            <div class="justify-center mt-3 ml-3 body-2" v-show="cpuStat">
                 <div v-for="(item, index) in cpus" :key="index">
                     <v-row class="text-center">
                         <v-col cols="12" sm="12" md="3" lg="3">
@@ -483,6 +483,13 @@ export default {
                         }
                     }
                 });
+        },
+
+        convert_string_to_int_and_remove_percent(string) {
+            if (string) {
+                string = string.replace(" %", "");
+                return parseInt(string);
+            }
         },
 
         // parent fn pro reset vsech hodnot do defaultu

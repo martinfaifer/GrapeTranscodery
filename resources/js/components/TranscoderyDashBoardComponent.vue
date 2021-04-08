@@ -1,8 +1,27 @@
 <template>
     <v-main class="mt-12">
+        <v-row v-show="transcoders === null" class="justify-center">
+            <span class="mt-12">
+                <i
+                    style="color:#596776"
+                    class="fas fa-spinner fa-pulse fa-5x"
+                ></i>
+            </span>
+        </v-row>
+        <v-container v-if="transcoders != null" fluid>
+            <span v-for="transcoder in transcoders" :key="transcoder.id">
+                <v-alert
+                    v-if="transcoder.status === 'offline'"
+                    type="error"
+                    class="mx-auto"
+                >
+                    {{ transcoder.name }} nefunguje
+                </v-alert>
+            </span>
+        </v-container>
         <v-container fluid>
             <v-row>
-                <v-row class="mx-auto mt-1 ma-1 mr-1">
+                <v-row class="mx-auto mt-1 mr-1 ma-1">
                     <v-col
                         v-for="transcoder in transcoders"
                         :key="transcoder.id"
@@ -15,16 +34,17 @@
                                 :to="'transcoder/' + transcoder.ip"
                                 :elevation="hover ? 24 : 0"
                                 class="mx-auto ma-0 transition-fast-in-fast-out"
+                                :class="{ 'on-hover': hover }"
                                 height="250"
-                                width="450"
+                                width="550"
                             >
-                                <v-card-text class="text-center ml-4">
+                                <v-card-text class="ml-4 text-center">
                                     <v-row class="headline">
                                         <div class="white--text">
                                             {{ transcoder.name }}
                                         </div>
                                     </v-row>
-                                    <v-row class="body-2 mt-3">
+                                    <v-row class="mt-3 body-2">
                                         <div>
                                             <span class="white--text">
                                                 status:
@@ -73,7 +93,7 @@
                                             </span>
                                         </div>
                                     </v-row>
-                                    <v-row class="body-2 mt-1">
+                                    <v-row class="mt-1 body-2">
                                         <div>
                                             <span class="white--text">
                                                 Počet streamů:
@@ -87,7 +107,7 @@
                                             </span>
                                         </div>
                                     </v-row>
-                                     <v-row class="body-2 mt-1">
+                                    <v-row class="mt-1 body-2">
                                         <div>
                                             <span class="white--text">
                                                 Počet nefunkčních streamů:
@@ -101,8 +121,8 @@
                                             </span>
                                         </div>
                                     </v-row>
-                                    <!-- telemtrie -->
-                                    <v-row class="body-2 mt-1">
+                                    <!-- telemetrie -->
+                                    <v-row class="mt-1 body-2">
                                         <div>
                                             <v-row
                                                 class="justify-center body-2"
@@ -119,8 +139,9 @@
                                                 >
                                                     <div
                                                         v-if="
-                                                            encoder.encoder_util <=
-                                                                '75 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                encoder.encoder_util
+                                                            ) <= 75
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -142,10 +163,12 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            encoder.encoder_util >
-                                                                '75 %' &&
-                                                                encoder.encoder_util <
-                                                                    '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                encoder.encoder_util
+                                                            ) > 75 &&
+                                                                convert_string_to_int_and_remove_percent(
+                                                                    encoder.encoder_util
+                                                                ) < 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -166,8 +189,9 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            encoder.encoder_util >=
-                                                                '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                encoder.encoder_util
+                                                            ) >= 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -200,8 +224,9 @@
                                                 >
                                                     <div
                                                         v-if="
-                                                            decoder.decoder_util <=
-                                                                '75 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                decoder.decoder_util
+                                                            ) <= 75
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -223,10 +248,12 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            decoder.decoder_util >
-                                                                '75 %' &&
-                                                                decoder.decoder_util <
-                                                                    '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                decoder.decoder_util
+                                                            ) > 75 &&
+                                                                convert_string_to_int_and_remove_percent(
+                                                                    decoder.decoder_util
+                                                                ) < 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -248,8 +275,9 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            decoder.decoder_util >=
-                                                                '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                decoder.decoder_util
+                                                            ) >= 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -281,8 +309,9 @@
                                                 >
                                                     <div
                                                         v-if="
-                                                            gpu.gpu_util <=
-                                                                '75 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                gpu.gpu_util
+                                                            ) <= 75
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -304,10 +333,12 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            gpu.gpu_util >
-                                                                '75 %' &&
-                                                                gpu.gpu_util <
-                                                                    '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                gpu.gpu_util
+                                                            ) > 75 &&
+                                                                convert_string_to_int_and_remove_percent(
+                                                                    gpu.gpu_util
+                                                                ) < 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -329,8 +360,9 @@
                                                     </div>
                                                     <div
                                                         v-if="
-                                                            gpu.gpu_util >=
-                                                                '88 %'
+                                                            convert_string_to_int_and_remove_percent(
+                                                                gpu.gpu_util
+                                                            ) >= 88
                                                         "
                                                     >
                                                         <v-progress-circular
@@ -348,6 +380,92 @@
                                                                     gpu.gpu_util
                                                                 }}
                                                             </small></v-progress-circular
+                                                        >
+                                                    </div>
+                                                </v-row>
+
+                                                <v-spacer></v-spacer>
+                                                <!-- RAM -->
+
+                                                <v-row
+                                                    class="ml-12"
+                                                    v-for="ram in transcoder
+                                                        .telemetrie.gpu"
+                                                    v-bind:key="ram.id"
+                                                    v-show="ram.used"
+                                                >
+                                                    <div
+                                                        v-if="
+                                                            percent(
+                                                                ram.used,
+                                                                ram.total
+                                                            ) < 75
+                                                        "
+                                                    >
+                                                        <v-progress-circular
+                                                            class="mt-2"
+                                                            :size="100"
+                                                            :width="2"
+                                                            :value="50"
+                                                            color="green"
+                                                        >
+                                                            <small
+                                                                class="ml-3 mr-3"
+                                                            >
+                                                                Volná RAM
+                                                                {{ ram.free }}
+                                                            </small>
+                                                        </v-progress-circular>
+                                                    </div>
+                                                    <div
+                                                        v-if="
+                                                            percent(
+                                                                ram.used,
+                                                                ram.total
+                                                            ) >= 75 &&
+                                                                percent(
+                                                                    ram.used,
+                                                                    ram.total
+                                                                ) < 88
+                                                        "
+                                                    >
+                                                        <v-progress-circular
+                                                            class="mt-2"
+                                                            :size="100"
+                                                            :width="2"
+                                                            :value="90"
+                                                            color="orange"
+                                                        >
+                                                            <small
+                                                                class="ml-3 mr-3"
+                                                            >
+                                                                Volná RAM
+                                                                {{ ram.free }}
+                                                            </small>
+                                                        </v-progress-circular>
+                                                    </div>
+                                                    <div
+                                                        v-if="
+                                                            percent(
+                                                                ram.used,
+                                                                ram.total
+                                                            ) >= 88
+                                                        "
+                                                    >
+                                                        <v-progress-circular
+                                                            class="mt-2"
+                                                            :size="100"
+                                                            :width="2"
+                                                            :value="50"
+                                                            color="red"
+                                                        >
+                                                            <small
+                                                                class="ml-3 mr-3"
+                                                            >
+                                                                Volná RAM
+                                                                {{ ram.free }}
+                                                            </small>
+                                                        </v-progress-circular>
                                                         >
                                                     </div>
                                                 </v-row>
@@ -384,31 +502,27 @@ export default {
         getTranscoders() {
             window.axios.get("transcoders/telemetrie").then(response => {
                 this.transcoders = response.data.data;
-                if (this.transcoders[0].telemetrie.gpu) {
-                    if (
-                        typeof this.transcoders[0].telemetrie.gpu
-                            .fb_memory_usage !== "undefined"
-                    ) {
-                        this.gpuStat = response.data;
-                        if (
-                            typeof this.transcoders[0].telemetrie.gpu
-                                .fb_memory_usage !== "undefined"
-                        ) {
-                            this.ramUsage = this.transcoders[0].telemetrie.gpu.fb_memory_usage;
-                            this.ramTotal = this.ramUsage.total.replace(
-                                " MiB",
-                                ""
-                            );
-                            this.ramUsed = this.ramUsage.used.replace(
-                                " MiB",
-                                ""
-                            );
-                            this.ramPercent =
-                                (this.ramUsed * 100) / this.ramTotal;
-                        }
-                    }
-                }
             });
+        },
+
+        percent(used, total) {
+            if (used && total) {
+                let ramUsage = used;
+                let ramTotal = total;
+                let ramPercent;
+                ramUsage = ramUsage.replace(" MiB", "");
+                ramTotal = ramTotal.replace(" MiB", "");
+
+                ramPercent = (parseInt(ramUsage) * 100) / parseInt(ramTotal);
+                return parseInt(ramPercent);
+            }
+        },
+
+        convert_string_to_int_and_remove_percent(string) {
+            if (string) {
+                string = string.replace(" %", "");
+                return parseInt(string);
+            }
         }
     },
 
@@ -417,9 +531,11 @@ export default {
             function() {
                 this.getTranscoders();
             }.bind(this),
-            2000
+            3000
         );
     },
+
+    watch: {},
     beforeDestroy: function() {
         clearInterval(this.loadingInterval);
     }

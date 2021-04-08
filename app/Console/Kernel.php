@@ -31,7 +31,7 @@ class Kernel extends ConsoleKernel
         // kontrola transcodérů
         $schedule->command('transcoder:ping')->everyMinute()->runInBackground();
         // kontrola streamů, zda nejsou OutOfSync
-        // $schedule->command('stream:check')->everyFiveMinutes()->runInBackground();
+        $schedule->command('stream:check')->everyFifteenMinutes()->runInBackground()->withoutOverlapping();
     }
 
     /**

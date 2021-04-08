@@ -6,11 +6,11 @@
             transition="scale-transition"
             dense
             top
-            :color="status.status"
+            :color="status.alert.status"
             v-model="status"
         >
             <div class="text-center">
-                <span class="subtitle-1"> {{ status.msg }} </span>
+                <span class="subtitle-1"> {{ status.alert.msg }} </span>
             </div>
             <template v-slot:action="{ attrs }">
                 <v-btn color="blue" text v-bind="attrs"> </v-btn>
@@ -21,7 +21,7 @@
                 <v-col cols="12" sm="8" md="4">
                     <v-card class="elevation-12">
                         <v-card-text>
-                            <h1 class="text-center mb-4 mt-4">
+                            <h1 class="mt-4 mb-4 text-center">
                                 <v-icon color="error" large>
                                     mdi-television-play
                                 </v-icon>
@@ -83,34 +83,29 @@ export default {
     },
     methods: {
         login() {
-            let currentObj = this;
             axios
                 .post("login", {
                     email: this.email,
                     password: this.password
                 })
-                .then(function(response) {
+                .then(response => {
                     if (response.data.status === "success") {
-                        currentObj.status = null;
-                        setTimeout(function() {
-
-                        }, 2000);
-                        currentObj.$router.push("/");
+                        this.status = null;
+                        this.$router.push("/");
                     } else {
-                        currentObj.status = response.data;
+                        this.status = response.data;
                         setTimeout(function() {
-                            currentObj.status = null;
+                            this.status = null;
                         }, 2000);
                     }
                 });
         },
 
         loadUser() {
-            let currentObj = this;
-            window.axios.get("user").then(response => {
+            axios.get("user").then(response => {
                 if (response.data.status == "error") {
                 } else {
-                    currentObj.$router.push("/");
+                    this.$router.push("/");
                 }
             });
         }

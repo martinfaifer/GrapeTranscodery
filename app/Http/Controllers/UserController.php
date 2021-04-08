@@ -27,25 +27,14 @@ class UserController extends Controller
     {
         if (Auth::attempt(['email' => $request->email, 'password' => $request->password], true)) {
             if (Auth::user()->user_status == "active") {
-                return [
-                    'isAlert' => "isAlert",
-                    'status' => "success",
-                    'msg' => "Úspěšně přihlášeno",
-                ];
+                // some code here
+                return NotificationController::notify("success", "success", "Přihlášeno!");
             } else {
                 Auth::logout();
-                return [
-                    'isAlert' => "isAlert",
-                    'status' => "error",
-                    'msg' => "Uživatel je zablokován!",
-                ];
+                return NotificationController::notify("error", "error", "Uživatel je zablokován!");
             }
         } else {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nesprávné údaje!",
-            ];
+            return NotificationController::notify("error", "error", "Nesprávné údaje!");
         }
     }
 
@@ -66,13 +55,9 @@ class UserController extends Controller
      */
     public static function getLoggedUser()
     {
-        $user = Auth::user();
-        if (empty($user)) {
-            return [
-                'isAlert' => "isAlert",
-                'status' => "error",
-                'msg' => "Nejste přihlášen!",
-            ];
+
+        if (!$user = Auth::user()) {
+            return NotificationController::notify("error", "error", "Nejste přihlášen!");
         } else {
             return [
                 'name' => $user->name,
@@ -126,25 +111,15 @@ class UserController extends Controller
             is_null($request->jmeno) || empty($request->jmeno) ||
             is_null($request->mail) || empty($request->mail)
         ) {
-
-            return [
-                'status' => "warning",
-                'msg' => "Není vše vyplněno"
-            ];
+            return NotificationController::notify("warning", "warning", "Není vše vyplněno!");
         }
 
         if (User::where('email', $request->mail)->first()) {
-            return [
-                'status' => "warning",
-                'msg' => "Email již existuje!"
-            ];
+            return NotificationController::notify("warning", "warning", "Email již existuje!");
         }
 
         if (!filter_var($request->mail, FILTER_VALIDATE_EMAIL)) {
-            return [
-                'status' => "warning",
-                'msg' => "E-mail má neplatný formát"
-            ];
+            return NotificationController::notify("warning", "warning", "E-mail má neplatný formát!");
         }
 
         try {
@@ -157,15 +132,9 @@ class UserController extends Controller
                 'password' => Hash::make($request->heslo)
             ]);
 
-            return [
-                'status' => "success",
-                'msg' => "Založeno"
-            ];
+            return NotificationController::notify("success", "success", "Založeno!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Nepodařilo se založit"
-            ];
+            return NotificationController::notify();
         }
     }
 
@@ -179,17 +148,11 @@ class UserController extends Controller
     public static function search_user(Request $request): array
     {
         if (empty($request->userId) || is_null($request->userId)) {
-            return [
-                'status' => "error",
-                'msg' => "Nepodařilo se vyhledat!"
-            ];
+            return NotificationController::notify("error", "error", "Nepodařilo se vyhledat uživatele!");
         }
 
         if (!User::where('id', $request->userId)->first()) {
-            return [
-                'status' => "error",
-                'msg' => "Neexistujici uživatel"
-            ];
+            return NotificationController::notify("error", "error", "Nepodařilo se vyhledat uživatele!");
         }
 
         return User::where('id', $request->userId)->first()->toArray();
@@ -205,10 +168,7 @@ class UserController extends Controller
     public function edit_user(Request $request): array
     {
         if (empty($request->userId) || is_null($request->userId)) {
-            return [
-                'status' => "error",
-                'msg' => "Nebyl nalezen uživatel"
-            ];
+            return NotificationController::notify("error", "error", "Nepodařilo se vyhledat uživatele!");
         }
 
         if (
@@ -216,10 +176,7 @@ class UserController extends Controller
             empty($request->mail) || is_null($request->mail)
 
         ) {
-            return [
-                'status' => "warning",
-                'msg' => "Není řádně vyplněno"
-            ];
+            return NotificationController::notify("warning", "warning", "Není vše řádně vyplněno!");
         }
 
         try {
@@ -245,16 +202,9 @@ class UserController extends Controller
                 'email' => $request->mail
             ]);
 
-
-            return [
-                'status' => "success",
-                'msg' => "Editováno"
-            ];
+            return NotificationController::notify("success", "success", "Editováno!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Nepodařilo se editovat"
-            ];
+            return NotificationController::notify();
         }
     }
 
@@ -267,24 +217,15 @@ class UserController extends Controller
     public function delete_user(Request $request): array
     {
         if ($request->userId === Auth::user()->id) {
-            return [
-                'status' => "warning",
-                'msg' => "Nelze smazat sam sebe"
-            ];
+            return NotificationController::notify("warning", "warning", "Nelze smazat sám sebe!");
         }
 
         try {
             $user = User::where('id', $request->userId)->first();
             $user->delete();
-            return [
-                'status' => "success",
-                'msg' => "Odebrano"
-            ];
+            return NotificationController::notify("success", "success", "Odebráno!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Nepodařilo se odebrat"
-            ];
+            return NotificationController::notify();
         }
     }
 
@@ -298,10 +239,7 @@ class UserController extends Controller
     {
 
         if (is_null($request->heslo) || empty($request->heslo)) {
-            return [
-                'status' => "warning",
-                'msg' => "Pole nesmí být prázdné"
-            ];
+            return NotificationController::notify("warning", "warning", "Pole nesmí být prázdné!");
         }
         $user = Auth::user();
 
@@ -310,15 +248,9 @@ class UserController extends Controller
                 'password' => Hash::make($request->heslo)
             ]);
 
-            return [
-                'status' => "success",
-                'msg' => "Heslo změněno"
-            ];
+            return NotificationController::notify("success", "success", "Heslo změněno!");
         } catch (\Throwable $th) {
-            return [
-                'status' => "error",
-                'msg' => "Heslo se nepodařilo změnit"
-            ];
+            return NotificationController::notify();
         }
     }
 }

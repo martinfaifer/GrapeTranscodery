@@ -1,10 +1,5 @@
 <template>
     <v-main>
-        <!-- notifikace -->
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
         <v-row>
             <v-card flat color="transparent">
                 <v-card-title>
@@ -55,7 +50,7 @@
         <v-row justify="center">
             <v-dialog v-model="createDialog" persistent max-width="800px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Založení formátu
                     </v-card-title>
                     <v-card-text>
@@ -97,7 +92,7 @@
         <v-row justify="center">
             <v-dialog v-model="editDialog" persistent max-width="800px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Editace formátu
                     </v-card-title>
                     <v-card-text>
@@ -135,7 +130,6 @@
     </v-main>
 </template>
 <script>
-import NotificationComponent from "../../Notifications/NotificationComponent";
 export default {
     data() {
         return {
@@ -158,9 +152,6 @@ export default {
             ]
         };
     },
-    components: {
-        "notification-component": NotificationComponent
-    },
     created() {
         this.loadFormats();
     },
@@ -171,49 +162,40 @@ export default {
         },
 
         editFormatDialog(formatId) {
-            let currentObj = this;
             axios
                 .post("format/get", {
                     formatId: formatId
                 })
-                .then(function(response) {
-                    currentObj.editDialog = true;
-                    currentObj.formatId = formatId;
-                    currentObj.formatEdit = response.data;
+                .then(response => {
+                    this.editDialog = true;
+                    this.formatId = formatId;
+                    this.formatEdit = response.data;
                 });
         },
         saveCreate() {
-            let currentObj = this;
             axios
                 .post("format/create", {
                     videoFormat: this.videoFormat,
                     videoCode: this.videoCode
                 })
-                .then(function(response) {
-                    currentObj.loadFormats();
-                    currentObj.closeDialog();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadFormats();
+                    this.closeDialog();
                 });
         },
 
         edit() {
-            let currentObj = this;
             axios
                 .post("format/edit", {
                     formatId: this.formatId,
                     video: this.formatEdit.video,
                     code: this.formatEdit.code
                 })
-                .then(function(response) {
-                    currentObj.loadFormats();
-                    currentObj.closeDialog();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadFormats();
+                    this.closeDialog();
                 });
         },
         closeDialog() {
@@ -234,17 +216,13 @@ export default {
             });
         },
         deleteFormat(formatId) {
-            let currentObj = this;
             axios
                 .post("format/delete", {
                     formatId: formatId
                 })
-                .then(function(response) {
-                    currentObj.loadFormats();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.loadFormats();
+                    this.$store.state.alerts = response.data.alert;
                 });
         }
     }

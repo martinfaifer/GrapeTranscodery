@@ -1,10 +1,5 @@
 <template>
     <v-main>
-        <!-- notifikace -->
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
         <v-container class="mt-12" fluid>
             <v-card flat color="transparent">
                 <v-card-title>
@@ -66,7 +61,7 @@
         <v-row justify="center">
             <v-dialog v-model="createDialog" persistent max-width="800px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Založení uživatele
                     </v-card-title>
                     <v-card-text>
@@ -128,7 +123,7 @@
         <v-row justify="center">
             <v-dialog v-model="editDialog" persistent max-width="800px">
                 <v-card>
-                    <v-card-title class="headline text-center">
+                    <v-card-title class="text-center headline">
                         Editace uživatele
                     </v-card-title>
                     <v-card-text>
@@ -209,7 +204,6 @@
     </v-main>
 </template>
 <script>
-import NotificationComponent from "../Notifications/NotificationComponent";
 export default {
     data() {
         return {
@@ -247,39 +241,30 @@ export default {
         this.loadUsers();
         this.loadUser();
     },
-    components: {
-        "notification-component": NotificationComponent
-    },
     methods: {
         loadUser() {
-            let currentObj = this;
-            window.axios.get("user").then(response => {
+            axios.get("user").then(response => {
                 if (response.data.status == "error") {
-                    currentObj.userRole = 'nahled';
+                    this.userRole = "nahled";
                 } else {
-                    if(response.data.user_role != 'admin') {
-                        currentObj.$router.push("/");
+                    if (response.data.user_role != "admin") {
+                        this.$router.push("/");
                     }
                 }
             });
         },
         deleteUser(userId) {
-            let currentObj = this;
             axios
                 .post("user/delete", {
                     userId: userId
                 })
-                .then(function(response) {
-                    currentObj.loadUsers();
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadUsers();
                 });
         },
 
         saveEditDialog() {
-            let currentObj = this;
             axios
                 .post("user/edit", {
                     userId: this.userId,
@@ -290,28 +275,23 @@ export default {
                     userStatus: this.userStatus,
                     editHeslo: this.editHeslo
                 })
-                .then(function(response) {
-                    currentObj.editUser = response.data;
-                    currentObj.status = response.data;
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
-                    currentObj.loadUsers();
-                    currentObj.loadRoles();
-                    currentObj.closeDialog();
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loadUsers();
+                    this.loadRoles();
+                    this.closeDialog();
                 });
         },
         openEditDialog(userId) {
-            let currentObj = this;
             axios
                 .post("user/search", {
                     userId: userId
                 })
-                .then(function(response) {
-                    currentObj.editUser = response.data;
-                    currentObj.userId = userId;
-                    currentObj.loadRoles();
-                    currentObj.editDialog = true;
+                .then(response => {
+                    this.editUser = response.data;
+                    this.userId = userId;
+                    this.loadRoles();
+                    this.editDialog = true;
                 });
         },
         openCreateDialog() {
@@ -320,16 +300,14 @@ export default {
         },
 
         loadUsers() {
-            let currentObj = this;
-            window.axios.get("users").then(response => {
-                currentObj.users = response.data;
+            axios.get("users").then(response => {
+                this.users = response.data;
             });
         },
 
         loadRoles() {
-            let currentObj = this;
-            window.axios.get("users/role").then(response => {
-                currentObj.roles = response.data;
+            axios.get("users/role").then(response => {
+                this.roles = response.data;
             });
         },
 
@@ -345,7 +323,6 @@ export default {
         },
 
         saveCreateDialog() {
-            let currentObj = this;
             axios
                 .post("user/create", {
                     heslo: this.heslo,
@@ -353,13 +330,10 @@ export default {
                     jmeno: this.jmeno,
                     mail: this.mail
                 })
-                .then(function(response) {
-                    currentObj.loadUsers();
-                    currentObj.status = response.data;
-                    currentObj.closeDialog();
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 2000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.createDialog = false;
+                    this.loadUsers();
                 });
         }
     }

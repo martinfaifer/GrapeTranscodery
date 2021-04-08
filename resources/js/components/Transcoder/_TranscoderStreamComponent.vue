@@ -1,9 +1,5 @@
 <template>
     <div>
-        <notification-component
-            v-if="status != null"
-            :status="status"
-        ></notification-component>
         <v-card class="elevation-0">
             <v-card-title>
                 <v-text-field
@@ -74,7 +70,7 @@
                 </v-data-table>
             </div>
             <div v-else-if="streams == null">
-                <v-alert type="info">
+                <v-alert type="info" class="ml-1 mr-1">
                     Na transcodéru nejsou žádně streamy
                 </v-alert>
             </div>
@@ -82,7 +78,6 @@
     </div>
 </template>
 <script>
-import NotificationComponent from "../Notifications/NotificationComponent";
 export default {
     data() {
         return {
@@ -150,57 +145,46 @@ export default {
         this.loadUser();
     },
 
-    components: {
-        "notification-component": NotificationComponent
-    },
-
     methods: {
         loadUser() {
-            let currentObj = this;
             window.axios.get("user").then(response => {
                 if (response.data.status == "error") {
-                    currentObj.userRole = [];
+                    this.userRole = [];
                 } else {
-                    currentObj.userRole = response.data.user_role;
+                    this.userRole = response.data.user_role;
                 }
             });
         },
         loadStreams() {
-            let currentObj = this;
             axios
                 .post("transcoder/streams", {
                     transcoderIp: this.$route.params.ip
                 })
-                .then(function(response) {
+                .then(response => {
                     if (response.data.status != "success") {
-                        currentObj.streams = null;
+                        this.streams = null;
                     } else {
-                        currentObj.streams = response.data.data;
+                        this.streams = response.data.data;
                     }
                 });
         },
         sendPlay(id) {
             this.loading = true;
-            let currentObj = this;
             axios
                 .post("transcoder/stream/start", {
                     streamId: id,
                     transcoderIp: this.$route.params.ip,
                     cmd: "START"
                 })
-                .then(function(response) {
-                    currentObj.status = response.data;
-                    currentObj.loading = false;
-                    currentObj.loadStreams();
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 5000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loading = false;
+                    this.loadStreams();
                 });
         },
 
         sendStop(id, pid) {
             this.loading = true;
-            let currentObj = this;
             axios
                 .post("transcoder/stream/stop", {
                     streamPid: pid,
@@ -208,14 +192,10 @@ export default {
                     transcoderIp: this.$route.params.ip,
                     cmd: "KILL"
                 })
-                .then(function(response) {
-                    console.log(response.data);
-                    currentObj.status = response.data;
-                    currentObj.loading = false;
-                    currentObj.loadStreams();
-                    setTimeout(function() {
-                        currentObj.status = null;
-                    }, 5000);
+                .then(response => {
+                    this.$store.state.alerts = response.data.alert;
+                    this.loading = false;
+                    this.loadStreams();
                 });
         }
     },
